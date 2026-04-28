@@ -91,6 +91,35 @@ var (
 			},
 		},
 	}
+	// ChangelogsColumns holds the columns for the "changelogs" table.
+	ChangelogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "summary", Type: field.TypeString, Size: 500},
+		{Name: "entity_id", Type: field.TypeUUID},
+	}
+	// ChangelogsTable holds the schema information for the "changelogs" table.
+	ChangelogsTable = &schema.Table{
+		Name:       "changelogs",
+		Columns:    ChangelogsColumns,
+		PrimaryKey: []*schema.Column{ChangelogsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "changelogs_entities_changelog_entries",
+				Columns:    []*schema.Column{ChangelogsColumns[4]},
+				RefColumns: []*schema.Column{EntitiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "changelog_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogsColumns[4]},
+			},
+		},
+	}
 	// EntitiesColumns holds the columns for the "entities" table.
 	EntitiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -552,6 +581,7 @@ var (
 		AttachmentsTable,
 		AuthRolesTable,
 		AuthTokensTable,
+		ChangelogsTable,
 		EntitiesTable,
 		EntityFieldsTable,
 		EntityTemplatesTable,
@@ -573,6 +603,7 @@ func init() {
 	AttachmentsTable.ForeignKeys[1].RefTable = EntitiesTable
 	AuthRolesTable.ForeignKeys[0].RefTable = AuthTokensTable
 	AuthTokensTable.ForeignKeys[0].RefTable = UsersTable
+	ChangelogsTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntitiesTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntitiesTable.ForeignKeys[1].RefTable = EntityTypesTable
 	EntitiesTable.ForeignKeys[2].RefTable = GroupsTable

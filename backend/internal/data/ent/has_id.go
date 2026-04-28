@@ -16,6 +16,10 @@ func (_m *AuthTokens) GetID() uuid.UUID {
 	return _m.ID
 }
 
+func (_m *Changelog) GetID() uuid.UUID {
+	return _m.ID
+}
+
 func (_m *Entity) GetID() uuid.UUID {
 	return _m.ID
 }

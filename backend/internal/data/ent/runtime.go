@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
@@ -86,6 +87,43 @@ func init() {
 	authtokensDescID := authtokensMixinFields0[0].Descriptor()
 	// authtokens.DefaultID holds the default value on creation for the id field.
 	authtokens.DefaultID = authtokensDescID.Default.(func() uuid.UUID)
+	changelogMixin := schema.Changelog{}.Mixin()
+	changelogMixinFields0 := changelogMixin[0].Fields()
+	_ = changelogMixinFields0
+	changelogFields := schema.Changelog{}.Fields()
+	_ = changelogFields
+	// changelogDescCreatedAt is the schema descriptor for created_at field.
+	changelogDescCreatedAt := changelogMixinFields0[1].Descriptor()
+	// changelog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	changelog.DefaultCreatedAt = changelogDescCreatedAt.Default.(func() time.Time)
+	// changelogDescUpdatedAt is the schema descriptor for updated_at field.
+	changelogDescUpdatedAt := changelogMixinFields0[2].Descriptor()
+	// changelog.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	changelog.DefaultUpdatedAt = changelogDescUpdatedAt.Default.(func() time.Time)
+	// changelog.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	changelog.UpdateDefaultUpdatedAt = changelogDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// changelogDescSummary is the schema descriptor for summary field.
+	changelogDescSummary := changelogFields[1].Descriptor()
+	// changelog.SummaryValidator is a validator for the "summary" field. It is called by the builders before save.
+	changelog.SummaryValidator = func() func(string) error {
+		validators := changelogDescSummary.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(summary string) error {
+			for _, fn := range fns {
+				if err := fn(summary); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogDescID is the schema descriptor for id field.
+	changelogDescID := changelogMixinFields0[0].Descriptor()
+	// changelog.DefaultID holds the default value on creation for the id field.
+	changelog.DefaultID = changelogDescID.Default.(func() uuid.UUID)
 	entityMixin := schema.Entity{}.Mixin()
 	entityMixinFields0 := entityMixin[0].Fields()
 	_ = entityMixinFields0

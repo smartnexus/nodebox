@@ -79,6 +79,8 @@ const (
 	EdgeMaintenanceEntries = "maintenance_entries"
 	// EdgeAttachments holds the string denoting the attachments edge name in mutations.
 	EdgeAttachments = "attachments"
+	// EdgeChangelogEntries holds the string denoting the changelog_entries edge name in mutations.
+	EdgeChangelogEntries = "changelog_entries"
 	// Table holds the table name of the entity in the database.
 	Table = "entities"
 	// GroupTable is the table that holds the group relation/edge.
@@ -129,6 +131,13 @@ const (
 	AttachmentsInverseTable = "attachments"
 	// AttachmentsColumn is the table column denoting the attachments relation/edge.
 	AttachmentsColumn = "entity_attachments"
+	// ChangelogEntriesTable is the table that holds the changelog_entries relation/edge.
+	ChangelogEntriesTable = "changelogs"
+	// ChangelogEntriesInverseTable is the table name for the Changelog entity.
+	// It exists in this package in order to avoid circular dependency with the "changelog" package.
+	ChangelogEntriesInverseTable = "changelogs"
+	// ChangelogEntriesColumn is the table column denoting the changelog_entries relation/edge.
+	ChangelogEntriesColumn = "entity_id"
 )
 
 // Columns holds all SQL columns for entity fields.
@@ -452,6 +461,20 @@ func ByAttachments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAttachmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByChangelogEntriesCount orders the results by changelog_entries count.
+func ByChangelogEntriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newChangelogEntriesStep(), opts...)
+	}
+}
+
+// ByChangelogEntries orders the results by changelog_entries terms.
+func ByChangelogEntries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newChangelogEntriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -506,5 +529,12 @@ func newAttachmentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AttachmentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AttachmentsTable, AttachmentsColumn),
+	)
+}
+func newChangelogEntriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ChangelogEntriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ChangelogEntriesTable, ChangelogEntriesColumn),
 	)
 }
