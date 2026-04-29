@@ -183,6 +183,11 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Get("/entities/{id}/changelog", chain.ToHandlerFunc(v1Ctrl.HandleChangelogGet(), userMW...))
 		r.Post("/entities/{id}/changelog", chain.ToHandlerFunc(v1Ctrl.HandleChangelogCreate(), userMW...))
 
+		// Changelog tag endpoints
+		r.Get("/changelog-tags", chain.ToHandlerFunc(v1Ctrl.HandleChangelogTagsGetAll(), userMW...))
+		r.Post("/changelog-tags", chain.ToHandlerFunc(v1Ctrl.HandleChangelogTagCreate(), userMW...))
+		r.Delete("/changelog-tags/{id}", chain.ToHandlerFunc(v1Ctrl.HandleChangelogTagDelete(), userMW...))
+
 		r.Get("/assets/{id}", chain.ToHandlerFunc(v1Ctrl.HandleAssetGet(), userMW...))
 
 		// Entity Templates

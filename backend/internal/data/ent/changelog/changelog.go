@@ -23,8 +23,12 @@ const (
 	FieldEntityID = "entity_id"
 	// FieldSummary holds the string denoting the summary field in the database.
 	FieldSummary = "summary"
+	// FieldTagID holds the string denoting the tag_id field in the database.
+	FieldTagID = "tag_id"
 	// EdgeEntity holds the string denoting the entity edge name in mutations.
 	EdgeEntity = "entity"
+	// EdgeTag holds the string denoting the tag edge name in mutations.
+	EdgeTag = "tag"
 	// Table holds the table name of the changelog in the database.
 	Table = "changelogs"
 	// EntityTable is the table that holds the entity relation/edge.
@@ -34,6 +38,13 @@ const (
 	EntityInverseTable = "entities"
 	// EntityColumn is the table column denoting the entity relation/edge.
 	EntityColumn = "entity_id"
+	// TagTable is the table that holds the tag relation/edge.
+	TagTable = "changelogs"
+	// TagInverseTable is the table name for the ChangelogTag entity.
+	// It exists in this package in order to avoid circular dependency with the "changelogtag" package.
+	TagInverseTable = "changelog_tags"
+	// TagColumn is the table column denoting the tag relation/edge.
+	TagColumn = "tag_id"
 )
 
 // Columns holds all SQL columns for changelog fields.
@@ -43,6 +54,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldEntityID,
 	FieldSummary,
+	FieldTagID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -96,10 +108,22 @@ func BySummary(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSummary, opts...).ToFunc()
 }
 
+// ByTagID orders the results by the tag_id field.
+func ByTagID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTagID, opts...).ToFunc()
+}
+
 // ByEntityField orders the results by entity field.
 func ByEntityField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newEntityStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByTagField orders the results by tag field.
+func ByTagField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTagStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newEntityStep() *sqlgraph.Step {
@@ -107,5 +131,12 @@ func newEntityStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EntityInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, EntityTable, EntityColumn),
+	)
+}
+func newTagStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TagInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TagTable, TagColumn),
 	)
 }

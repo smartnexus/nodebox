@@ -76,6 +76,11 @@ func Summary(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldSummary, v))
 }
 
+// TagID applies equality check predicate on the "tag_id" field. It's identical to TagIDEQ.
+func TagID(v uuid.UUID) predicate.Changelog {
+	return predicate.Changelog(sql.FieldEQ(FieldTagID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Changelog {
 	return predicate.Changelog(sql.FieldEQ(FieldCreatedAt, v))
@@ -241,6 +246,36 @@ func SummaryContainsFold(v string) predicate.Changelog {
 	return predicate.Changelog(sql.FieldContainsFold(FieldSummary, v))
 }
 
+// TagIDEQ applies the EQ predicate on the "tag_id" field.
+func TagIDEQ(v uuid.UUID) predicate.Changelog {
+	return predicate.Changelog(sql.FieldEQ(FieldTagID, v))
+}
+
+// TagIDNEQ applies the NEQ predicate on the "tag_id" field.
+func TagIDNEQ(v uuid.UUID) predicate.Changelog {
+	return predicate.Changelog(sql.FieldNEQ(FieldTagID, v))
+}
+
+// TagIDIn applies the In predicate on the "tag_id" field.
+func TagIDIn(vs ...uuid.UUID) predicate.Changelog {
+	return predicate.Changelog(sql.FieldIn(FieldTagID, vs...))
+}
+
+// TagIDNotIn applies the NotIn predicate on the "tag_id" field.
+func TagIDNotIn(vs ...uuid.UUID) predicate.Changelog {
+	return predicate.Changelog(sql.FieldNotIn(FieldTagID, vs...))
+}
+
+// TagIDIsNil applies the IsNil predicate on the "tag_id" field.
+func TagIDIsNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldIsNull(FieldTagID))
+}
+
+// TagIDNotNil applies the NotNil predicate on the "tag_id" field.
+func TagIDNotNil() predicate.Changelog {
+	return predicate.Changelog(sql.FieldNotNull(FieldTagID))
+}
+
 // HasEntity applies the HasEdge predicate on the "entity" edge.
 func HasEntity() predicate.Changelog {
 	return predicate.Changelog(func(s *sql.Selector) {
@@ -256,6 +291,29 @@ func HasEntity() predicate.Changelog {
 func HasEntityWith(preds ...predicate.Entity) predicate.Changelog {
 	return predicate.Changelog(func(s *sql.Selector) {
 		step := newEntityStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTag applies the HasEdge predicate on the "tag" edge.
+func HasTag() predicate.Changelog {
+	return predicate.Changelog(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TagTable, TagColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTagWith applies the HasEdge predicate on the "tag" edge with a given conditions (other predicates).
+func HasTagWith(preds ...predicate.ChangelogTag) predicate.Changelog {
+	return predicate.Changelog(func(s *sql.Selector) {
+		step := newTagStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

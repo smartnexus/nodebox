@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 )
@@ -64,9 +65,34 @@ func (_u *ChangelogUpdate) SetNillableSummary(v *string) *ChangelogUpdate {
 	return _u
 }
 
+// SetTagID sets the "tag_id" field.
+func (_u *ChangelogUpdate) SetTagID(v uuid.UUID) *ChangelogUpdate {
+	_u.mutation.SetTagID(v)
+	return _u
+}
+
+// SetNillableTagID sets the "tag_id" field if the given value is not nil.
+func (_u *ChangelogUpdate) SetNillableTagID(v *uuid.UUID) *ChangelogUpdate {
+	if v != nil {
+		_u.SetTagID(*v)
+	}
+	return _u
+}
+
+// ClearTagID clears the value of the "tag_id" field.
+func (_u *ChangelogUpdate) ClearTagID() *ChangelogUpdate {
+	_u.mutation.ClearTagID()
+	return _u
+}
+
 // SetEntity sets the "entity" edge to the Entity entity.
 func (_u *ChangelogUpdate) SetEntity(v *Entity) *ChangelogUpdate {
 	return _u.SetEntityID(v.ID)
+}
+
+// SetTag sets the "tag" edge to the ChangelogTag entity.
+func (_u *ChangelogUpdate) SetTag(v *ChangelogTag) *ChangelogUpdate {
+	return _u.SetTagID(v.ID)
 }
 
 // Mutation returns the ChangelogMutation object of the builder.
@@ -77,6 +103,12 @@ func (_u *ChangelogUpdate) Mutation() *ChangelogMutation {
 // ClearEntity clears the "entity" edge to the Entity entity.
 func (_u *ChangelogUpdate) ClearEntity() *ChangelogUpdate {
 	_u.mutation.ClearEntity()
+	return _u
+}
+
+// ClearTag clears the "tag" edge to the ChangelogTag entity.
+func (_u *ChangelogUpdate) ClearTag() *ChangelogUpdate {
+	_u.mutation.ClearTag()
 	return _u
 }
 
@@ -176,6 +208,35 @@ func (_u *ChangelogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.TagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   changelog.TagTable,
+			Columns: []string{changelog.TagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   changelog.TagTable,
+			Columns: []string{changelog.TagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{changelog.Label}
@@ -230,9 +291,34 @@ func (_u *ChangelogUpdateOne) SetNillableSummary(v *string) *ChangelogUpdateOne 
 	return _u
 }
 
+// SetTagID sets the "tag_id" field.
+func (_u *ChangelogUpdateOne) SetTagID(v uuid.UUID) *ChangelogUpdateOne {
+	_u.mutation.SetTagID(v)
+	return _u
+}
+
+// SetNillableTagID sets the "tag_id" field if the given value is not nil.
+func (_u *ChangelogUpdateOne) SetNillableTagID(v *uuid.UUID) *ChangelogUpdateOne {
+	if v != nil {
+		_u.SetTagID(*v)
+	}
+	return _u
+}
+
+// ClearTagID clears the value of the "tag_id" field.
+func (_u *ChangelogUpdateOne) ClearTagID() *ChangelogUpdateOne {
+	_u.mutation.ClearTagID()
+	return _u
+}
+
 // SetEntity sets the "entity" edge to the Entity entity.
 func (_u *ChangelogUpdateOne) SetEntity(v *Entity) *ChangelogUpdateOne {
 	return _u.SetEntityID(v.ID)
+}
+
+// SetTag sets the "tag" edge to the ChangelogTag entity.
+func (_u *ChangelogUpdateOne) SetTag(v *ChangelogTag) *ChangelogUpdateOne {
+	return _u.SetTagID(v.ID)
 }
 
 // Mutation returns the ChangelogMutation object of the builder.
@@ -243,6 +329,12 @@ func (_u *ChangelogUpdateOne) Mutation() *ChangelogMutation {
 // ClearEntity clears the "entity" edge to the Entity entity.
 func (_u *ChangelogUpdateOne) ClearEntity() *ChangelogUpdateOne {
 	_u.mutation.ClearEntity()
+	return _u
+}
+
+// ClearTag clears the "tag" edge to the ChangelogTag entity.
+func (_u *ChangelogUpdateOne) ClearTag() *ChangelogUpdateOne {
+	_u.mutation.ClearTag()
 	return _u
 }
 
@@ -365,6 +457,35 @@ func (_u *ChangelogUpdateOne) sqlSave(ctx context.Context) (_node *Changelog, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TagCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   changelog.TagTable,
+			Columns: []string{changelog.TagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   changelog.TagTable,
+			Columns: []string{changelog.TagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

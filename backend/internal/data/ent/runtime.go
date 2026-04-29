@@ -9,6 +9,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
@@ -124,6 +125,49 @@ func init() {
 	changelogDescID := changelogMixinFields0[0].Descriptor()
 	// changelog.DefaultID holds the default value on creation for the id field.
 	changelog.DefaultID = changelogDescID.Default.(func() uuid.UUID)
+	changelogtagMixin := schema.ChangelogTag{}.Mixin()
+	changelogtagMixinFields0 := changelogtagMixin[0].Fields()
+	_ = changelogtagMixinFields0
+	changelogtagFields := schema.ChangelogTag{}.Fields()
+	_ = changelogtagFields
+	// changelogtagDescCreatedAt is the schema descriptor for created_at field.
+	changelogtagDescCreatedAt := changelogtagMixinFields0[1].Descriptor()
+	// changelogtag.DefaultCreatedAt holds the default value on creation for the created_at field.
+	changelogtag.DefaultCreatedAt = changelogtagDescCreatedAt.Default.(func() time.Time)
+	// changelogtagDescUpdatedAt is the schema descriptor for updated_at field.
+	changelogtagDescUpdatedAt := changelogtagMixinFields0[2].Descriptor()
+	// changelogtag.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	changelogtag.DefaultUpdatedAt = changelogtagDescUpdatedAt.Default.(func() time.Time)
+	// changelogtag.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	changelogtag.UpdateDefaultUpdatedAt = changelogtagDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// changelogtagDescName is the schema descriptor for name field.
+	changelogtagDescName := changelogtagFields[0].Descriptor()
+	// changelogtag.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	changelogtag.NameValidator = func() func(string) error {
+		validators := changelogtagDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogtagDescColor is the schema descriptor for color field.
+	changelogtagDescColor := changelogtagFields[1].Descriptor()
+	// changelogtag.DefaultColor holds the default value on creation for the color field.
+	changelogtag.DefaultColor = changelogtagDescColor.Default.(string)
+	// changelogtag.ColorValidator is a validator for the "color" field. It is called by the builders before save.
+	changelogtag.ColorValidator = changelogtagDescColor.Validators[0].(func(string) error)
+	// changelogtagDescID is the schema descriptor for id field.
+	changelogtagDescID := changelogtagMixinFields0[0].Descriptor()
+	// changelogtag.DefaultID holds the default value on creation for the id field.
+	changelogtag.DefaultID = changelogtagDescID.Default.(func() uuid.UUID)
 	entityMixin := schema.Entity{}.Mixin()
 	entityMixinFields0 := entityMixin[0].Fields()
 	_ = entityMixinFields0

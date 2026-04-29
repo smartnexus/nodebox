@@ -27,6 +27,9 @@ func (Changelog) Fields() []ent.Field {
 		field.String("summary").
 			MaxLen(500).
 			NotEmpty(),
+		field.UUID("tag_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 	}
 }
 
@@ -40,6 +43,10 @@ func (Changelog) Edges() []ent.Edge {
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,
 			}),
+		edge.From("tag", ChangelogTag.Type).
+			Field("tag_id").
+			Ref("changelogs").
+			Unique(),
 	}
 }
 
@@ -48,3 +55,4 @@ func (Changelog) Indexes() []ent.Index {
 		index.Fields("entity_id"),
 	}
 }
+

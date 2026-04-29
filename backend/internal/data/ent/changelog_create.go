@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 )
 
@@ -62,6 +63,20 @@ func (_c *ChangelogCreate) SetSummary(v string) *ChangelogCreate {
 	return _c
 }
 
+// SetTagID sets the "tag_id" field.
+func (_c *ChangelogCreate) SetTagID(v uuid.UUID) *ChangelogCreate {
+	_c.mutation.SetTagID(v)
+	return _c
+}
+
+// SetNillableTagID sets the "tag_id" field if the given value is not nil.
+func (_c *ChangelogCreate) SetNillableTagID(v *uuid.UUID) *ChangelogCreate {
+	if v != nil {
+		_c.SetTagID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *ChangelogCreate) SetID(v uuid.UUID) *ChangelogCreate {
 	_c.mutation.SetID(v)
@@ -79,6 +94,11 @@ func (_c *ChangelogCreate) SetNillableID(v *uuid.UUID) *ChangelogCreate {
 // SetEntity sets the "entity" edge to the Entity entity.
 func (_c *ChangelogCreate) SetEntity(v *Entity) *ChangelogCreate {
 	return _c.SetEntityID(v.ID)
+}
+
+// SetTag sets the "tag" edge to the ChangelogTag entity.
+func (_c *ChangelogCreate) SetTag(v *ChangelogTag) *ChangelogCreate {
+	return _c.SetTagID(v.ID)
 }
 
 // Mutation returns the ChangelogMutation object of the builder.
@@ -214,6 +234,23 @@ func (_c *ChangelogCreate) createSpec() (*Changelog, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.EntityID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TagIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   changelog.TagTable,
+			Columns: []string{changelog.TagColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.TagID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

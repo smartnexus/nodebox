@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
@@ -43,6 +44,7 @@ const (
 	TypeAuthRoles            = "AuthRoles"
 	TypeAuthTokens           = "AuthTokens"
 	TypeChangelog            = "Changelog"
+	TypeChangelogTag         = "ChangelogTag"
 	TypeEntity               = "Entity"
 	TypeEntityField          = "EntityField"
 	TypeEntityTemplate       = "EntityTemplate"
@@ -1863,6 +1865,8 @@ type ChangelogMutation struct {
 	clearedFields map[string]struct{}
 	entity        *uuid.UUID
 	clearedentity bool
+	tag           *uuid.UUID
+	clearedtag    bool
 	done          bool
 	oldValue      func(context.Context) (*Changelog, error)
 	predicates    []predicate.Changelog
@@ -2116,6 +2120,55 @@ func (m *ChangelogMutation) ResetSummary() {
 	m.summary = nil
 }
 
+// SetTagID sets the "tag_id" field.
+func (m *ChangelogMutation) SetTagID(u uuid.UUID) {
+	m.tag = &u
+}
+
+// TagID returns the value of the "tag_id" field in the mutation.
+func (m *ChangelogMutation) TagID() (r uuid.UUID, exists bool) {
+	v := m.tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTagID returns the old "tag_id" field's value of the Changelog entity.
+// If the Changelog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogMutation) OldTagID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTagID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTagID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTagID: %w", err)
+	}
+	return oldValue.TagID, nil
+}
+
+// ClearTagID clears the value of the "tag_id" field.
+func (m *ChangelogMutation) ClearTagID() {
+	m.tag = nil
+	m.clearedFields[changelog.FieldTagID] = struct{}{}
+}
+
+// TagIDCleared returns if the "tag_id" field was cleared in this mutation.
+func (m *ChangelogMutation) TagIDCleared() bool {
+	_, ok := m.clearedFields[changelog.FieldTagID]
+	return ok
+}
+
+// ResetTagID resets all changes to the "tag_id" field.
+func (m *ChangelogMutation) ResetTagID() {
+	m.tag = nil
+	delete(m.clearedFields, changelog.FieldTagID)
+}
+
 // ClearEntity clears the "entity" edge to the Entity entity.
 func (m *ChangelogMutation) ClearEntity() {
 	m.clearedentity = true
@@ -2141,6 +2194,33 @@ func (m *ChangelogMutation) EntityIDs() (ids []uuid.UUID) {
 func (m *ChangelogMutation) ResetEntity() {
 	m.entity = nil
 	m.clearedentity = false
+}
+
+// ClearTag clears the "tag" edge to the ChangelogTag entity.
+func (m *ChangelogMutation) ClearTag() {
+	m.clearedtag = true
+	m.clearedFields[changelog.FieldTagID] = struct{}{}
+}
+
+// TagCleared reports if the "tag" edge to the ChangelogTag entity was cleared.
+func (m *ChangelogMutation) TagCleared() bool {
+	return m.TagIDCleared() || m.clearedtag
+}
+
+// TagIDs returns the "tag" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TagID instead. It exists only for internal usage by the builders.
+func (m *ChangelogMutation) TagIDs() (ids []uuid.UUID) {
+	if id := m.tag; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTag resets all changes to the "tag" edge.
+func (m *ChangelogMutation) ResetTag() {
+	m.tag = nil
+	m.clearedtag = false
 }
 
 // Where appends a list predicates to the ChangelogMutation builder.
@@ -2177,7 +2257,7 @@ func (m *ChangelogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChangelogMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, changelog.FieldCreatedAt)
 	}
@@ -2189,6 +2269,9 @@ func (m *ChangelogMutation) Fields() []string {
 	}
 	if m.summary != nil {
 		fields = append(fields, changelog.FieldSummary)
+	}
+	if m.tag != nil {
+		fields = append(fields, changelog.FieldTagID)
 	}
 	return fields
 }
@@ -2206,6 +2289,8 @@ func (m *ChangelogMutation) Field(name string) (ent.Value, bool) {
 		return m.EntityID()
 	case changelog.FieldSummary:
 		return m.Summary()
+	case changelog.FieldTagID:
+		return m.TagID()
 	}
 	return nil, false
 }
@@ -2223,6 +2308,8 @@ func (m *ChangelogMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldEntityID(ctx)
 	case changelog.FieldSummary:
 		return m.OldSummary(ctx)
+	case changelog.FieldTagID:
+		return m.OldTagID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Changelog field %s", name)
 }
@@ -2260,6 +2347,13 @@ func (m *ChangelogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSummary(v)
 		return nil
+	case changelog.FieldTagID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTagID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Changelog field %s", name)
 }
@@ -2289,7 +2383,11 @@ func (m *ChangelogMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ChangelogMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(changelog.FieldTagID) {
+		fields = append(fields, changelog.FieldTagID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2302,6 +2400,11 @@ func (m *ChangelogMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ChangelogMutation) ClearField(name string) error {
+	switch name {
+	case changelog.FieldTagID:
+		m.ClearTagID()
+		return nil
+	}
 	return fmt.Errorf("unknown Changelog nullable field %s", name)
 }
 
@@ -2321,15 +2424,21 @@ func (m *ChangelogMutation) ResetField(name string) error {
 	case changelog.FieldSummary:
 		m.ResetSummary()
 		return nil
+	case changelog.FieldTagID:
+		m.ResetTagID()
+		return nil
 	}
 	return fmt.Errorf("unknown Changelog field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ChangelogMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.entity != nil {
 		edges = append(edges, changelog.EdgeEntity)
+	}
+	if m.tag != nil {
+		edges = append(edges, changelog.EdgeTag)
 	}
 	return edges
 }
@@ -2342,13 +2451,17 @@ func (m *ChangelogMutation) AddedIDs(name string) []ent.Value {
 		if id := m.entity; id != nil {
 			return []ent.Value{*id}
 		}
+	case changelog.EdgeTag:
+		if id := m.tag; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ChangelogMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -2360,9 +2473,12 @@ func (m *ChangelogMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ChangelogMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedentity {
 		edges = append(edges, changelog.EdgeEntity)
+	}
+	if m.clearedtag {
+		edges = append(edges, changelog.EdgeTag)
 	}
 	return edges
 }
@@ -2373,6 +2489,8 @@ func (m *ChangelogMutation) EdgeCleared(name string) bool {
 	switch name {
 	case changelog.EdgeEntity:
 		return m.clearedentity
+	case changelog.EdgeTag:
+		return m.clearedtag
 	}
 	return false
 }
@@ -2383,6 +2501,9 @@ func (m *ChangelogMutation) ClearEdge(name string) error {
 	switch name {
 	case changelog.EdgeEntity:
 		m.ClearEntity()
+		return nil
+	case changelog.EdgeTag:
+		m.ClearTag()
 		return nil
 	}
 	return fmt.Errorf("unknown Changelog unique edge %s", name)
@@ -2395,8 +2516,679 @@ func (m *ChangelogMutation) ResetEdge(name string) error {
 	case changelog.EdgeEntity:
 		m.ResetEntity()
 		return nil
+	case changelog.EdgeTag:
+		m.ResetTag()
+		return nil
 	}
 	return fmt.Errorf("unknown Changelog edge %s", name)
+}
+
+// ChangelogTagMutation represents an operation that mutates the ChangelogTag nodes in the graph.
+type ChangelogTagMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	name              *string
+	color             *string
+	clearedFields     map[string]struct{}
+	group             *uuid.UUID
+	clearedgroup      bool
+	changelogs        map[uuid.UUID]struct{}
+	removedchangelogs map[uuid.UUID]struct{}
+	clearedchangelogs bool
+	done              bool
+	oldValue          func(context.Context) (*ChangelogTag, error)
+	predicates        []predicate.ChangelogTag
+}
+
+var _ ent.Mutation = (*ChangelogTagMutation)(nil)
+
+// changelogtagOption allows management of the mutation configuration using functional options.
+type changelogtagOption func(*ChangelogTagMutation)
+
+// newChangelogTagMutation creates new mutation for the ChangelogTag entity.
+func newChangelogTagMutation(c config, op Op, opts ...changelogtagOption) *ChangelogTagMutation {
+	m := &ChangelogTagMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeChangelogTag,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withChangelogTagID sets the ID field of the mutation.
+func withChangelogTagID(id uuid.UUID) changelogtagOption {
+	return func(m *ChangelogTagMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ChangelogTag
+		)
+		m.oldValue = func(ctx context.Context) (*ChangelogTag, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ChangelogTag.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withChangelogTag sets the old ChangelogTag of the mutation.
+func withChangelogTag(node *ChangelogTag) changelogtagOption {
+	return func(m *ChangelogTagMutation) {
+		m.oldValue = func(context.Context) (*ChangelogTag, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ChangelogTagMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ChangelogTagMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ChangelogTag entities.
+func (m *ChangelogTagMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ChangelogTagMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ChangelogTagMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ChangelogTag.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ChangelogTagMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ChangelogTagMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ChangelogTag entity.
+// If the ChangelogTag object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogTagMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ChangelogTagMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ChangelogTagMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ChangelogTagMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ChangelogTag entity.
+// If the ChangelogTag object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogTagMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ChangelogTagMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *ChangelogTagMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ChangelogTagMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the ChangelogTag entity.
+// If the ChangelogTag object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogTagMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ChangelogTagMutation) ResetName() {
+	m.name = nil
+}
+
+// SetColor sets the "color" field.
+func (m *ChangelogTagMutation) SetColor(s string) {
+	m.color = &s
+}
+
+// Color returns the value of the "color" field in the mutation.
+func (m *ChangelogTagMutation) Color() (r string, exists bool) {
+	v := m.color
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldColor returns the old "color" field's value of the ChangelogTag entity.
+// If the ChangelogTag object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogTagMutation) OldColor(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldColor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldColor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldColor: %w", err)
+	}
+	return oldValue.Color, nil
+}
+
+// ClearColor clears the value of the "color" field.
+func (m *ChangelogTagMutation) ClearColor() {
+	m.color = nil
+	m.clearedFields[changelogtag.FieldColor] = struct{}{}
+}
+
+// ColorCleared returns if the "color" field was cleared in this mutation.
+func (m *ChangelogTagMutation) ColorCleared() bool {
+	_, ok := m.clearedFields[changelogtag.FieldColor]
+	return ok
+}
+
+// ResetColor resets all changes to the "color" field.
+func (m *ChangelogTagMutation) ResetColor() {
+	m.color = nil
+	delete(m.clearedFields, changelogtag.FieldColor)
+}
+
+// SetGroupID sets the "group" edge to the Group entity by id.
+func (m *ChangelogTagMutation) SetGroupID(id uuid.UUID) {
+	m.group = &id
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *ChangelogTagMutation) ClearGroup() {
+	m.clearedgroup = true
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *ChangelogTagMutation) GroupCleared() bool {
+	return m.clearedgroup
+}
+
+// GroupID returns the "group" edge ID in the mutation.
+func (m *ChangelogTagMutation) GroupID() (id uuid.UUID, exists bool) {
+	if m.group != nil {
+		return *m.group, true
+	}
+	return
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *ChangelogTagMutation) GroupIDs() (ids []uuid.UUID) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *ChangelogTagMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
+}
+
+// AddChangelogIDs adds the "changelogs" edge to the Changelog entity by ids.
+func (m *ChangelogTagMutation) AddChangelogIDs(ids ...uuid.UUID) {
+	if m.changelogs == nil {
+		m.changelogs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.changelogs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearChangelogs clears the "changelogs" edge to the Changelog entity.
+func (m *ChangelogTagMutation) ClearChangelogs() {
+	m.clearedchangelogs = true
+}
+
+// ChangelogsCleared reports if the "changelogs" edge to the Changelog entity was cleared.
+func (m *ChangelogTagMutation) ChangelogsCleared() bool {
+	return m.clearedchangelogs
+}
+
+// RemoveChangelogIDs removes the "changelogs" edge to the Changelog entity by IDs.
+func (m *ChangelogTagMutation) RemoveChangelogIDs(ids ...uuid.UUID) {
+	if m.removedchangelogs == nil {
+		m.removedchangelogs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.changelogs, ids[i])
+		m.removedchangelogs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedChangelogs returns the removed IDs of the "changelogs" edge to the Changelog entity.
+func (m *ChangelogTagMutation) RemovedChangelogsIDs() (ids []uuid.UUID) {
+	for id := range m.removedchangelogs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ChangelogsIDs returns the "changelogs" edge IDs in the mutation.
+func (m *ChangelogTagMutation) ChangelogsIDs() (ids []uuid.UUID) {
+	for id := range m.changelogs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetChangelogs resets all changes to the "changelogs" edge.
+func (m *ChangelogTagMutation) ResetChangelogs() {
+	m.changelogs = nil
+	m.clearedchangelogs = false
+	m.removedchangelogs = nil
+}
+
+// Where appends a list predicates to the ChangelogTagMutation builder.
+func (m *ChangelogTagMutation) Where(ps ...predicate.ChangelogTag) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ChangelogTagMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ChangelogTagMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ChangelogTag, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ChangelogTagMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ChangelogTagMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ChangelogTag).
+func (m *ChangelogTagMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ChangelogTagMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, changelogtag.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, changelogtag.FieldUpdatedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, changelogtag.FieldName)
+	}
+	if m.color != nil {
+		fields = append(fields, changelogtag.FieldColor)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ChangelogTagMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case changelogtag.FieldCreatedAt:
+		return m.CreatedAt()
+	case changelogtag.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case changelogtag.FieldName:
+		return m.Name()
+	case changelogtag.FieldColor:
+		return m.Color()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ChangelogTagMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case changelogtag.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case changelogtag.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case changelogtag.FieldName:
+		return m.OldName(ctx)
+	case changelogtag.FieldColor:
+		return m.OldColor(ctx)
+	}
+	return nil, fmt.Errorf("unknown ChangelogTag field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChangelogTagMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case changelogtag.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case changelogtag.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case changelogtag.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case changelogtag.FieldColor:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetColor(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogTag field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ChangelogTagMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ChangelogTagMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChangelogTagMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ChangelogTag numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ChangelogTagMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(changelogtag.FieldColor) {
+		fields = append(fields, changelogtag.FieldColor)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ChangelogTagMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ChangelogTagMutation) ClearField(name string) error {
+	switch name {
+	case changelogtag.FieldColor:
+		m.ClearColor()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogTag nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ChangelogTagMutation) ResetField(name string) error {
+	switch name {
+	case changelogtag.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case changelogtag.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case changelogtag.FieldName:
+		m.ResetName()
+		return nil
+	case changelogtag.FieldColor:
+		m.ResetColor()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogTag field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ChangelogTagMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.group != nil {
+		edges = append(edges, changelogtag.EdgeGroup)
+	}
+	if m.changelogs != nil {
+		edges = append(edges, changelogtag.EdgeChangelogs)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ChangelogTagMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case changelogtag.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
+	case changelogtag.EdgeChangelogs:
+		ids := make([]ent.Value, 0, len(m.changelogs))
+		for id := range m.changelogs {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ChangelogTagMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedchangelogs != nil {
+		edges = append(edges, changelogtag.EdgeChangelogs)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ChangelogTagMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case changelogtag.EdgeChangelogs:
+		ids := make([]ent.Value, 0, len(m.removedchangelogs))
+		for id := range m.removedchangelogs {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ChangelogTagMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedgroup {
+		edges = append(edges, changelogtag.EdgeGroup)
+	}
+	if m.clearedchangelogs {
+		edges = append(edges, changelogtag.EdgeChangelogs)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ChangelogTagMutation) EdgeCleared(name string) bool {
+	switch name {
+	case changelogtag.EdgeGroup:
+		return m.clearedgroup
+	case changelogtag.EdgeChangelogs:
+		return m.clearedchangelogs
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ChangelogTagMutation) ClearEdge(name string) error {
+	switch name {
+	case changelogtag.EdgeGroup:
+		m.ClearGroup()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogTag unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ChangelogTagMutation) ResetEdge(name string) error {
+	switch name {
+	case changelogtag.EdgeGroup:
+		m.ResetGroup()
+		return nil
+	case changelogtag.EdgeChangelogs:
+		m.ResetChangelogs()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogTag edge %s", name)
 }
 
 // EntityMutation represents an operation that mutates the Entity nodes in the graph.
@@ -8472,6 +9264,9 @@ type GroupMutation struct {
 	entity_templates         map[uuid.UUID]struct{}
 	removedentity_templates  map[uuid.UUID]struct{}
 	clearedentity_templates  bool
+	changelog_tags           map[uuid.UUID]struct{}
+	removedchangelog_tags    map[uuid.UUID]struct{}
+	clearedchangelog_tags    bool
 	done                     bool
 	oldValue                 func(context.Context) (*Group, error)
 	predicates               []predicate.Group
@@ -9103,6 +9898,60 @@ func (m *GroupMutation) ResetEntityTemplates() {
 	m.removedentity_templates = nil
 }
 
+// AddChangelogTagIDs adds the "changelog_tags" edge to the ChangelogTag entity by ids.
+func (m *GroupMutation) AddChangelogTagIDs(ids ...uuid.UUID) {
+	if m.changelog_tags == nil {
+		m.changelog_tags = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.changelog_tags[ids[i]] = struct{}{}
+	}
+}
+
+// ClearChangelogTags clears the "changelog_tags" edge to the ChangelogTag entity.
+func (m *GroupMutation) ClearChangelogTags() {
+	m.clearedchangelog_tags = true
+}
+
+// ChangelogTagsCleared reports if the "changelog_tags" edge to the ChangelogTag entity was cleared.
+func (m *GroupMutation) ChangelogTagsCleared() bool {
+	return m.clearedchangelog_tags
+}
+
+// RemoveChangelogTagIDs removes the "changelog_tags" edge to the ChangelogTag entity by IDs.
+func (m *GroupMutation) RemoveChangelogTagIDs(ids ...uuid.UUID) {
+	if m.removedchangelog_tags == nil {
+		m.removedchangelog_tags = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.changelog_tags, ids[i])
+		m.removedchangelog_tags[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedChangelogTags returns the removed IDs of the "changelog_tags" edge to the ChangelogTag entity.
+func (m *GroupMutation) RemovedChangelogTagsIDs() (ids []uuid.UUID) {
+	for id := range m.removedchangelog_tags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ChangelogTagsIDs returns the "changelog_tags" edge IDs in the mutation.
+func (m *GroupMutation) ChangelogTagsIDs() (ids []uuid.UUID) {
+	for id := range m.changelog_tags {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetChangelogTags resets all changes to the "changelog_tags" edge.
+func (m *GroupMutation) ResetChangelogTags() {
+	m.changelog_tags = nil
+	m.clearedchangelog_tags = false
+	m.removedchangelog_tags = nil
+}
+
 // Where appends a list predicates to the GroupMutation builder.
 func (m *GroupMutation) Where(ps ...predicate.Group) {
 	m.predicates = append(m.predicates, ps...)
@@ -9287,7 +10136,7 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.users != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -9308,6 +10157,9 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.entity_templates != nil {
 		edges = append(edges, group.EdgeEntityTemplates)
+	}
+	if m.changelog_tags != nil {
+		edges = append(edges, group.EdgeChangelogTags)
 	}
 	return edges
 }
@@ -9358,13 +10210,19 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeChangelogTags:
+		ids := make([]ent.Value, 0, len(m.changelog_tags))
+		for id := range m.changelog_tags {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.removedusers != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -9385,6 +10243,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedentity_templates != nil {
 		edges = append(edges, group.EdgeEntityTemplates)
+	}
+	if m.removedchangelog_tags != nil {
+		edges = append(edges, group.EdgeChangelogTags)
 	}
 	return edges
 }
@@ -9435,13 +10296,19 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeChangelogTags:
+		ids := make([]ent.Value, 0, len(m.removedchangelog_tags))
+		for id := range m.removedchangelog_tags {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.clearedusers {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -9462,6 +10329,9 @@ func (m *GroupMutation) ClearedEdges() []string {
 	}
 	if m.clearedentity_templates {
 		edges = append(edges, group.EdgeEntityTemplates)
+	}
+	if m.clearedchangelog_tags {
+		edges = append(edges, group.EdgeChangelogTags)
 	}
 	return edges
 }
@@ -9484,6 +10354,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearednotifiers
 	case group.EdgeEntityTemplates:
 		return m.clearedentity_templates
+	case group.EdgeChangelogTags:
+		return m.clearedchangelog_tags
 	}
 	return false
 }
@@ -9520,6 +10392,9 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	case group.EdgeEntityTemplates:
 		m.ResetEntityTemplates()
+		return nil
+	case group.EdgeChangelogTags:
+		m.ResetChangelogTags()
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)

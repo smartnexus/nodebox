@@ -57,6 +57,18 @@ func (f ChangelogFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChangelogMutation", m)
 }
 
+// The ChangelogTagFunc type is an adapter to allow the use of ordinary
+// function as ChangelogTag mutator.
+type ChangelogTagFunc func(context.Context, *ent.ChangelogTagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ChangelogTagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ChangelogTagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChangelogTagMutation", m)
+}
+
 // The EntityFunc type is an adapter to allow the use of ordinary
 // function as Entity mutator.
 type EntityFunc func(context.Context, *ent.EntityMutation) (ent.Value, error)

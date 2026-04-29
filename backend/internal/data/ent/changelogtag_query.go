@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -14,58 +15,59 @@ import (
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
-	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 )
 
-// ChangelogQuery is the builder for querying Changelog entities.
-type ChangelogQuery struct {
+// ChangelogTagQuery is the builder for querying ChangelogTag entities.
+type ChangelogTagQuery struct {
 	config
-	ctx        *QueryContext
-	order      []changelog.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Changelog
-	withEntity *EntityQuery
-	withTag    *ChangelogTagQuery
+	ctx            *QueryContext
+	order          []changelogtag.OrderOption
+	inters         []Interceptor
+	predicates     []predicate.ChangelogTag
+	withGroup      *GroupQuery
+	withChangelogs *ChangelogQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the ChangelogQuery builder.
-func (_q *ChangelogQuery) Where(ps ...predicate.Changelog) *ChangelogQuery {
+// Where adds a new predicate for the ChangelogTagQuery builder.
+func (_q *ChangelogTagQuery) Where(ps ...predicate.ChangelogTag) *ChangelogTagQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *ChangelogQuery) Limit(limit int) *ChangelogQuery {
+func (_q *ChangelogTagQuery) Limit(limit int) *ChangelogTagQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *ChangelogQuery) Offset(offset int) *ChangelogQuery {
+func (_q *ChangelogTagQuery) Offset(offset int) *ChangelogTagQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *ChangelogQuery) Unique(unique bool) *ChangelogQuery {
+func (_q *ChangelogTagQuery) Unique(unique bool) *ChangelogTagQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *ChangelogQuery) Order(o ...changelog.OrderOption) *ChangelogQuery {
+func (_q *ChangelogTagQuery) Order(o ...changelogtag.OrderOption) *ChangelogTagQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryEntity chains the current query on the "entity" edge.
-func (_q *ChangelogQuery) QueryEntity() *EntityQuery {
-	query := (&EntityClient{config: _q.config}).Query()
+// QueryGroup chains the current query on the "group" edge.
+func (_q *ChangelogTagQuery) QueryGroup() *GroupQuery {
+	query := (&GroupClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -75,9 +77,9 @@ func (_q *ChangelogQuery) QueryEntity() *EntityQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(changelog.Table, changelog.FieldID, selector),
-			sqlgraph.To(entity.Table, entity.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, changelog.EntityTable, changelog.EntityColumn),
+			sqlgraph.From(changelogtag.Table, changelogtag.FieldID, selector),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, changelogtag.GroupTable, changelogtag.GroupColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -85,9 +87,9 @@ func (_q *ChangelogQuery) QueryEntity() *EntityQuery {
 	return query
 }
 
-// QueryTag chains the current query on the "tag" edge.
-func (_q *ChangelogQuery) QueryTag() *ChangelogTagQuery {
-	query := (&ChangelogTagClient{config: _q.config}).Query()
+// QueryChangelogs chains the current query on the "changelogs" edge.
+func (_q *ChangelogTagQuery) QueryChangelogs() *ChangelogQuery {
+	query := (&ChangelogClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -97,9 +99,9 @@ func (_q *ChangelogQuery) QueryTag() *ChangelogTagQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(changelog.Table, changelog.FieldID, selector),
-			sqlgraph.To(changelogtag.Table, changelogtag.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, changelog.TagTable, changelog.TagColumn),
+			sqlgraph.From(changelogtag.Table, changelogtag.FieldID, selector),
+			sqlgraph.To(changelog.Table, changelog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, changelogtag.ChangelogsTable, changelogtag.ChangelogsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -107,21 +109,21 @@ func (_q *ChangelogQuery) QueryTag() *ChangelogTagQuery {
 	return query
 }
 
-// First returns the first Changelog entity from the query.
-// Returns a *NotFoundError when no Changelog was found.
-func (_q *ChangelogQuery) First(ctx context.Context) (*Changelog, error) {
+// First returns the first ChangelogTag entity from the query.
+// Returns a *NotFoundError when no ChangelogTag was found.
+func (_q *ChangelogTagQuery) First(ctx context.Context) (*ChangelogTag, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{changelog.Label}
+		return nil, &NotFoundError{changelogtag.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *ChangelogQuery) FirstX(ctx context.Context) *Changelog {
+func (_q *ChangelogTagQuery) FirstX(ctx context.Context) *ChangelogTag {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -129,22 +131,22 @@ func (_q *ChangelogQuery) FirstX(ctx context.Context) *Changelog {
 	return node
 }
 
-// FirstID returns the first Changelog ID from the query.
-// Returns a *NotFoundError when no Changelog ID was found.
-func (_q *ChangelogQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first ChangelogTag ID from the query.
+// Returns a *NotFoundError when no ChangelogTag ID was found.
+func (_q *ChangelogTagQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{changelog.Label}
+		err = &NotFoundError{changelogtag.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *ChangelogQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (_q *ChangelogTagQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -152,10 +154,10 @@ func (_q *ChangelogQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single Changelog entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Changelog entity is found.
-// Returns a *NotFoundError when no Changelog entities are found.
-func (_q *ChangelogQuery) Only(ctx context.Context) (*Changelog, error) {
+// Only returns a single ChangelogTag entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one ChangelogTag entity is found.
+// Returns a *NotFoundError when no ChangelogTag entities are found.
+func (_q *ChangelogTagQuery) Only(ctx context.Context) (*ChangelogTag, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -164,14 +166,14 @@ func (_q *ChangelogQuery) Only(ctx context.Context) (*Changelog, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{changelog.Label}
+		return nil, &NotFoundError{changelogtag.Label}
 	default:
-		return nil, &NotSingularError{changelog.Label}
+		return nil, &NotSingularError{changelogtag.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *ChangelogQuery) OnlyX(ctx context.Context) *Changelog {
+func (_q *ChangelogTagQuery) OnlyX(ctx context.Context) *ChangelogTag {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -179,10 +181,10 @@ func (_q *ChangelogQuery) OnlyX(ctx context.Context) *Changelog {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Changelog ID in the query.
-// Returns a *NotSingularError when more than one Changelog ID is found.
+// OnlyID is like Only, but returns the only ChangelogTag ID in the query.
+// Returns a *NotSingularError when more than one ChangelogTag ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *ChangelogQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ChangelogTagQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -191,15 +193,15 @@ func (_q *ChangelogQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) 
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{changelog.Label}
+		err = &NotFoundError{changelogtag.Label}
 	default:
-		err = &NotSingularError{changelog.Label}
+		err = &NotSingularError{changelogtag.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *ChangelogQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (_q *ChangelogTagQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -207,18 +209,18 @@ func (_q *ChangelogQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of Changelogs.
-func (_q *ChangelogQuery) All(ctx context.Context) ([]*Changelog, error) {
+// All executes the query and returns a list of ChangelogTags.
+func (_q *ChangelogTagQuery) All(ctx context.Context) ([]*ChangelogTag, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Changelog, *ChangelogQuery]()
-	return withInterceptors[[]*Changelog](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*ChangelogTag, *ChangelogTagQuery]()
+	return withInterceptors[[]*ChangelogTag](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *ChangelogQuery) AllX(ctx context.Context) []*Changelog {
+func (_q *ChangelogTagQuery) AllX(ctx context.Context) []*ChangelogTag {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -226,20 +228,20 @@ func (_q *ChangelogQuery) AllX(ctx context.Context) []*Changelog {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Changelog IDs.
-func (_q *ChangelogQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of ChangelogTag IDs.
+func (_q *ChangelogTagQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(changelog.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(changelogtag.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *ChangelogQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (_q *ChangelogTagQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -248,16 +250,16 @@ func (_q *ChangelogQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (_q *ChangelogQuery) Count(ctx context.Context) (int, error) {
+func (_q *ChangelogTagQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*ChangelogQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ChangelogTagQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *ChangelogQuery) CountX(ctx context.Context) int {
+func (_q *ChangelogTagQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -266,7 +268,7 @@ func (_q *ChangelogQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *ChangelogQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *ChangelogTagQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -279,7 +281,7 @@ func (_q *ChangelogQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *ChangelogQuery) ExistX(ctx context.Context) bool {
+func (_q *ChangelogTagQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -287,45 +289,45 @@ func (_q *ChangelogQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the ChangelogQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the ChangelogTagQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *ChangelogQuery) Clone() *ChangelogQuery {
+func (_q *ChangelogTagQuery) Clone() *ChangelogTagQuery {
 	if _q == nil {
 		return nil
 	}
-	return &ChangelogQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]changelog.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Changelog{}, _q.predicates...),
-		withEntity: _q.withEntity.Clone(),
-		withTag:    _q.withTag.Clone(),
+	return &ChangelogTagQuery{
+		config:         _q.config,
+		ctx:            _q.ctx.Clone(),
+		order:          append([]changelogtag.OrderOption{}, _q.order...),
+		inters:         append([]Interceptor{}, _q.inters...),
+		predicates:     append([]predicate.ChangelogTag{}, _q.predicates...),
+		withGroup:      _q.withGroup.Clone(),
+		withChangelogs: _q.withChangelogs.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithEntity tells the query-builder to eager-load the nodes that are connected to
-// the "entity" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ChangelogQuery) WithEntity(opts ...func(*EntityQuery)) *ChangelogQuery {
-	query := (&EntityClient{config: _q.config}).Query()
+// WithGroup tells the query-builder to eager-load the nodes that are connected to
+// the "group" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ChangelogTagQuery) WithGroup(opts ...func(*GroupQuery)) *ChangelogTagQuery {
+	query := (&GroupClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withEntity = query
+	_q.withGroup = query
 	return _q
 }
 
-// WithTag tells the query-builder to eager-load the nodes that are connected to
-// the "tag" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ChangelogQuery) WithTag(opts ...func(*ChangelogTagQuery)) *ChangelogQuery {
-	query := (&ChangelogTagClient{config: _q.config}).Query()
+// WithChangelogs tells the query-builder to eager-load the nodes that are connected to
+// the "changelogs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ChangelogTagQuery) WithChangelogs(opts ...func(*ChangelogQuery)) *ChangelogTagQuery {
+	query := (&ChangelogClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withTag = query
+	_q.withChangelogs = query
 	return _q
 }
 
@@ -339,15 +341,15 @@ func (_q *ChangelogQuery) WithTag(opts ...func(*ChangelogTagQuery)) *ChangelogQu
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Changelog.Query().
-//		GroupBy(changelog.FieldCreatedAt).
+//	client.ChangelogTag.Query().
+//		GroupBy(changelogtag.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *ChangelogQuery) GroupBy(field string, fields ...string) *ChangelogGroupBy {
+func (_q *ChangelogTagQuery) GroupBy(field string, fields ...string) *ChangelogTagGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ChangelogGroupBy{build: _q}
+	grbuild := &ChangelogTagGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = changelog.Label
+	grbuild.label = changelogtag.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -361,23 +363,23 @@ func (_q *ChangelogQuery) GroupBy(field string, fields ...string) *ChangelogGrou
 //		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.Changelog.Query().
-//		Select(changelog.FieldCreatedAt).
+//	client.ChangelogTag.Query().
+//		Select(changelogtag.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (_q *ChangelogQuery) Select(fields ...string) *ChangelogSelect {
+func (_q *ChangelogTagQuery) Select(fields ...string) *ChangelogTagSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &ChangelogSelect{ChangelogQuery: _q}
-	sbuild.label = changelog.Label
+	sbuild := &ChangelogTagSelect{ChangelogTagQuery: _q}
+	sbuild.label = changelogtag.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a ChangelogSelect configured with the given aggregations.
-func (_q *ChangelogQuery) Aggregate(fns ...AggregateFunc) *ChangelogSelect {
+// Aggregate returns a ChangelogTagSelect configured with the given aggregations.
+func (_q *ChangelogTagQuery) Aggregate(fns ...AggregateFunc) *ChangelogTagSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *ChangelogQuery) prepareQuery(ctx context.Context) error {
+func (_q *ChangelogTagQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -389,7 +391,7 @@ func (_q *ChangelogQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !changelog.ValidColumn(f) {
+		if !changelogtag.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -403,20 +405,27 @@ func (_q *ChangelogQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *ChangelogQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Changelog, error) {
+func (_q *ChangelogTagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ChangelogTag, error) {
 	var (
-		nodes       = []*Changelog{}
+		nodes       = []*ChangelogTag{}
+		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			_q.withEntity != nil,
-			_q.withTag != nil,
+			_q.withGroup != nil,
+			_q.withChangelogs != nil,
 		}
 	)
+	if _q.withGroup != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, changelogtag.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Changelog).scanValues(nil, columns)
+		return (*ChangelogTag).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Changelog{config: _q.config}
+		node := &ChangelogTag{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -430,26 +439,30 @@ func (_q *ChangelogQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withEntity; query != nil {
-		if err := _q.loadEntity(ctx, query, nodes, nil,
-			func(n *Changelog, e *Entity) { n.Edges.Entity = e }); err != nil {
+	if query := _q.withGroup; query != nil {
+		if err := _q.loadGroup(ctx, query, nodes, nil,
+			func(n *ChangelogTag, e *Group) { n.Edges.Group = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withTag; query != nil {
-		if err := _q.loadTag(ctx, query, nodes, nil,
-			func(n *Changelog, e *ChangelogTag) { n.Edges.Tag = e }); err != nil {
+	if query := _q.withChangelogs; query != nil {
+		if err := _q.loadChangelogs(ctx, query, nodes,
+			func(n *ChangelogTag) { n.Edges.Changelogs = []*Changelog{} },
+			func(n *ChangelogTag, e *Changelog) { n.Edges.Changelogs = append(n.Edges.Changelogs, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *ChangelogQuery) loadEntity(ctx context.Context, query *EntityQuery, nodes []*Changelog, init func(*Changelog), assign func(*Changelog, *Entity)) error {
+func (_q *ChangelogTagQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*ChangelogTag, init func(*ChangelogTag), assign func(*ChangelogTag, *Group)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Changelog)
+	nodeids := make(map[uuid.UUID][]*ChangelogTag)
 	for i := range nodes {
-		fk := nodes[i].EntityID
+		if nodes[i].group_changelog_tags == nil {
+			continue
+		}
+		fk := *nodes[i].group_changelog_tags
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -458,7 +471,7 @@ func (_q *ChangelogQuery) loadEntity(ctx context.Context, query *EntityQuery, no
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(entity.IDIn(ids...))
+	query.Where(group.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -466,7 +479,7 @@ func (_q *ChangelogQuery) loadEntity(ctx context.Context, query *EntityQuery, no
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "entity_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "group_changelog_tags" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -474,40 +487,41 @@ func (_q *ChangelogQuery) loadEntity(ctx context.Context, query *EntityQuery, no
 	}
 	return nil
 }
-func (_q *ChangelogQuery) loadTag(ctx context.Context, query *ChangelogTagQuery, nodes []*Changelog, init func(*Changelog), assign func(*Changelog, *ChangelogTag)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Changelog)
+func (_q *ChangelogTagQuery) loadChangelogs(ctx context.Context, query *ChangelogQuery, nodes []*ChangelogTag, init func(*ChangelogTag), assign func(*ChangelogTag, *Changelog)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*ChangelogTag)
 	for i := range nodes {
-		if nodes[i].TagID == nil {
-			continue
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		fk := *nodes[i].TagID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(changelog.FieldTagID)
 	}
-	query.Where(changelogtag.IDIn(ids...))
+	query.Where(predicate.Changelog(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(changelogtag.ChangelogsColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.TagID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "tag_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tag_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "tag_id" returned %v for node %v`, *fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
 
-func (_q *ChangelogQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *ChangelogTagQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -516,8 +530,8 @@ func (_q *ChangelogQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *ChangelogQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(changelog.Table, changelog.Columns, sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID))
+func (_q *ChangelogTagQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(changelogtag.Table, changelogtag.Columns, sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -526,17 +540,11 @@ func (_q *ChangelogQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, changelog.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, changelogtag.FieldID)
 		for i := range fields {
-			if fields[i] != changelog.FieldID {
+			if fields[i] != changelogtag.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if _q.withEntity != nil {
-			_spec.Node.AddColumnOnce(changelog.FieldEntityID)
-		}
-		if _q.withTag != nil {
-			_spec.Node.AddColumnOnce(changelog.FieldTagID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -562,12 +570,12 @@ func (_q *ChangelogQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *ChangelogQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *ChangelogTagQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(changelog.Table)
+	t1 := builder.Table(changelogtag.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = changelog.Columns
+		columns = changelogtag.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -594,28 +602,28 @@ func (_q *ChangelogQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// ChangelogGroupBy is the group-by builder for Changelog entities.
-type ChangelogGroupBy struct {
+// ChangelogTagGroupBy is the group-by builder for ChangelogTag entities.
+type ChangelogTagGroupBy struct {
 	selector
-	build *ChangelogQuery
+	build *ChangelogTagQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *ChangelogGroupBy) Aggregate(fns ...AggregateFunc) *ChangelogGroupBy {
+func (_g *ChangelogTagGroupBy) Aggregate(fns ...AggregateFunc) *ChangelogTagGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *ChangelogGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *ChangelogTagGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ChangelogQuery, *ChangelogGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*ChangelogTagQuery, *ChangelogTagGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *ChangelogGroupBy) sqlScan(ctx context.Context, root *ChangelogQuery, v any) error {
+func (_g *ChangelogTagGroupBy) sqlScan(ctx context.Context, root *ChangelogTagQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -642,28 +650,28 @@ func (_g *ChangelogGroupBy) sqlScan(ctx context.Context, root *ChangelogQuery, v
 	return sql.ScanSlice(rows, v)
 }
 
-// ChangelogSelect is the builder for selecting fields of Changelog entities.
-type ChangelogSelect struct {
-	*ChangelogQuery
+// ChangelogTagSelect is the builder for selecting fields of ChangelogTag entities.
+type ChangelogTagSelect struct {
+	*ChangelogTagQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *ChangelogSelect) Aggregate(fns ...AggregateFunc) *ChangelogSelect {
+func (_s *ChangelogTagSelect) Aggregate(fns ...AggregateFunc) *ChangelogTagSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *ChangelogSelect) Scan(ctx context.Context, v any) error {
+func (_s *ChangelogTagSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ChangelogQuery, *ChangelogSelect](ctx, _s.ChangelogQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*ChangelogTagQuery, *ChangelogTagSelect](ctx, _s.ChangelogTagQuery, _s, _s.inters, v)
 }
 
-func (_s *ChangelogSelect) sqlScan(ctx context.Context, root *ChangelogQuery, v any) error {
+func (_s *ChangelogTagSelect) sqlScan(ctx context.Context, root *ChangelogTagQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

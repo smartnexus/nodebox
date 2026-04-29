@@ -13,9 +13,10 @@ export class ChangelogAPI extends BaseAPI {
 
   /**
    * Create a new changelog entry for the given item.
+   * tagId is optional - if provided it must be a valid ChangelogTag ID for the current group.
    */
-  create(itemId: string, data: ChangelogEntryCreate) {
-    return this.http.post<ChangelogEntryCreate, ChangelogEntry>({
+  create(itemId: string, data: { summary: string; tagId?: string }) {
+    return this.http.post<Partial<ChangelogEntryCreate>, ChangelogEntry>({
       url: route(`/entities/${itemId}/changelog`),
       body: data,
     });

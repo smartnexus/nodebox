@@ -37,6 +37,8 @@ const (
 	EdgeNotifiers = "notifiers"
 	// EdgeEntityTemplates holds the string denoting the entity_templates edge name in mutations.
 	EdgeEntityTemplates = "entity_templates"
+	// EdgeChangelogTags holds the string denoting the changelog_tags edge name in mutations.
+	EdgeChangelogTags = "changelog_tags"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
@@ -86,6 +88,13 @@ const (
 	EntityTemplatesInverseTable = "entity_templates"
 	// EntityTemplatesColumn is the table column denoting the entity_templates relation/edge.
 	EntityTemplatesColumn = "group_entity_templates"
+	// ChangelogTagsTable is the table that holds the changelog_tags relation/edge.
+	ChangelogTagsTable = "changelog_tags"
+	// ChangelogTagsInverseTable is the table name for the ChangelogTag entity.
+	// It exists in this package in order to avoid circular dependency with the "changelogtag" package.
+	ChangelogTagsInverseTable = "changelog_tags"
+	// ChangelogTagsColumn is the table column denoting the changelog_tags relation/edge.
+	ChangelogTagsColumn = "group_changelog_tags"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -253,6 +262,20 @@ func ByEntityTemplates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEntityTemplatesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByChangelogTagsCount orders the results by changelog_tags count.
+func ByChangelogTagsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newChangelogTagsStep(), opts...)
+	}
+}
+
+// ByChangelogTags orders the results by changelog_tags terms.
+func ByChangelogTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newChangelogTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -300,5 +323,12 @@ func newEntityTemplatesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EntityTemplatesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, EntityTemplatesTable, EntityTemplatesColumn),
+	)
+}
+func newChangelogTagsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ChangelogTagsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ChangelogTagsTable, ChangelogTagsColumn),
 	)
 }

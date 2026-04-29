@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
@@ -193,6 +194,21 @@ func (_c *GroupCreate) AddEntityTemplates(v ...*EntityTemplate) *GroupCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddEntityTemplateIDs(ids...)
+}
+
+// AddChangelogTagIDs adds the "changelog_tags" edge to the ChangelogTag entity by IDs.
+func (_c *GroupCreate) AddChangelogTagIDs(ids ...uuid.UUID) *GroupCreate {
+	_c.mutation.AddChangelogTagIDs(ids...)
+	return _c
+}
+
+// AddChangelogTags adds the "changelog_tags" edges to the ChangelogTag entity.
+func (_c *GroupCreate) AddChangelogTags(v ...*ChangelogTag) *GroupCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddChangelogTagIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -423,6 +439,22 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entitytemplate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ChangelogTagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

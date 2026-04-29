@@ -168,6 +168,9 @@ definitions:
       summary:
         description: Summary holds the value of the "summary" field.
         type: string
+      tag_id:
+        description: TagID holds the value of the "tag_id" field.
+        type: string
       updated_at:
         description: UpdatedAt holds the value of the "updated_at" field.
         type: string
@@ -178,6 +181,46 @@ definitions:
         allOf:
         - $ref: '#/definitions/ent.Entity'
         description: Entity holds the value of the entity edge.
+      tag:
+        allOf:
+        - $ref: '#/definitions/ent.ChangelogTag'
+        description: Tag holds the value of the tag edge.
+    type: object
+  ent.ChangelogTag:
+    properties:
+      color:
+        description: Color holds the value of the "color" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ChangelogTagEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ChangelogTagQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: string
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.ChangelogTagEdges:
+    properties:
+      changelogs:
+        description: Changelogs holds the value of the changelogs edge.
+        items:
+          $ref: '#/definitions/ent.Changelog'
+        type: array
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
     type: object
   ent.Entity:
     properties:
@@ -515,6 +558,11 @@ definitions:
     type: object
   ent.GroupEdges:
     properties:
+      changelog_tags:
+        description: ChangelogTags holds the value of the changelog_tags edge.
+        items:
+          $ref: '#/definitions/ent.ChangelogTag'
+        type: array
       entities:
         description: Entities holds the value of the entities edge.
         items:

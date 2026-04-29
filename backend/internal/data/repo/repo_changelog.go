@@ -19,15 +19,24 @@ type ChangelogRepository struct {
 
 // ChangelogEntryCreate is the input type for creating a new changelog entry.
 type ChangelogEntryCreate struct {
-	Summary string `json:"summary" validate:"required"`
+	Summary string     `json:"summary" validate:"required"`
+	TagID   *uuid.UUID `json:"tagId,omitempty"`
+}
+
+// ChangelogTagSummary is the summary representation of a changelog tag.
+type ChangelogTagSummary struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Color string    `json:"color"`
 }
 
 // ChangelogEntry is the output type for a single changelog entry.
 type ChangelogEntry struct {
-	ID        uuid.UUID `json:"id"`
-	EntityID  uuid.UUID `json:"entityId"`
-	CreatedAt time.Time `json:"createdAt"`
-	Summary   string    `json:"summary"`
+	ID        uuid.UUID            `json:"id"`
+	EntityID  uuid.UUID            `json:"entityId"`
+	CreatedAt time.Time            `json:"createdAt"`
+	Summary   string               `json:"summary"`
+	Tag       *ChangelogTagSummary `json:"tag,omitempty"`
 }
 
 var (
@@ -36,20 +45,44 @@ var (
 )
 
 func mapChangelogEntry(entry *ent.Changelog) ChangelogEntry {
-	return ChangelogEntry{
+	out := ChangelogEntry{
 		ID:        entry.ID,
 		EntityID:  entry.EntityID,
 		CreatedAt: entry.CreatedAt,
 		Summary:   entry.Summary,
 	}
+
+	if entry.Edges.Tag != nil {
+		out.Tag = &ChangelogTagSummary{
+			ID:    entry.Edges.Tag.ID,
+			Name:  entry.Edges.Tag.Name,
+			Color: entry.Edges.Tag.Color,
+		}
+	}
+
+	return out
 }
 
 // Create inserts a new changelog entry for the given entity.
 func (r *ChangelogRepository) Create(ctx context.Context, entityID uuid.UUID, input ChangelogEntryCreate) (ChangelogEntry, error) {
-	entry, err := r.db.Changelog.Create().
+	q := r.db.Changelog.Create().
 		SetEntityID(entityID).
-		SetSummary(input.Summary).
-		Save(ctx)
+		SetSummary(input.Summary)
+
+	if input.TagID != nil && *input.TagID != uuid.Nil {
+		q = q.SetTagID(*input.TagID)
+	}
+
+	entry, err := q.Save(ctx)
+	if err != nil {
+		return ChangelogEntry{}, err
+	}
+
+	// Reload with tag edge so the response includes the tag.
+	entry, err = r.db.Changelog.Query().
+		Where(changelog.ID(entry.ID)).
+		WithTag().
+		Only(ctx)
 
 	return mapChangelogEntryErr(entry, err)
 }
@@ -64,6 +97,7 @@ func (r *ChangelogRepository) GetByEntityID(ctx context.Context, groupID, entity
 				entity.HasGroupWith(group.IDEQ(groupID)),
 			),
 		).
+		WithTag().
 		Order(ent.Desc(changelog.FieldCreatedAt)).
 		All(ctx)
 
@@ -73,3 +107,4 @@ func (r *ChangelogRepository) GetByEntityID(ctx context.Context, groupID, entity
 
 	return mapEachChangelogEntry(entries), nil
 }
+

@@ -447,6 +447,29 @@ func HasEntityTemplatesWith(preds ...predicate.EntityTemplate) predicate.Group {
 	})
 }
 
+// HasChangelogTags applies the HasEdge predicate on the "changelog_tags" edge.
+func HasChangelogTags() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ChangelogTagsTable, ChangelogTagsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasChangelogTagsWith applies the HasEdge predicate on the "changelog_tags" edge with a given conditions (other predicates).
+func HasChangelogTagsWith(preds ...predicate.ChangelogTag) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newChangelogTagsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Group) predicate.Group {
 	return predicate.Group(sql.AndPredicates(predicates...))

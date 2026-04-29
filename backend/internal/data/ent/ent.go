@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
@@ -91,6 +92,7 @@ func checkColumn(t, c string) error {
 			authroles.Table:            authroles.ValidColumn,
 			authtokens.Table:           authtokens.ValidColumn,
 			changelog.Table:            changelog.ValidColumn,
+			changelogtag.Table:         changelogtag.ValidColumn,
 			entity.Table:               entity.ValidColumn,
 			entityfield.Table:          entityfield.ValidColumn,
 			entitytemplate.Table:       entitytemplate.ValidColumn,

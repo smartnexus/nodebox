@@ -20,6 +20,7 @@ type AllRepos struct {
 	MaintEntry      *MaintenanceEntryRepository
 	Notifiers       *NotifierRepository
 	Changelog       *ChangelogRepository
+	ChangelogTags   *ChangelogTagRepository
 }
 
 func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubConn string, thumbnail config.Thumbnail) *AllRepos {
@@ -36,5 +37,6 @@ func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubC
 		MaintEntry:      &MaintenanceEntryRepository{db},
 		Notifiers:       NewNotifierRepository(db),
 		Changelog:       &ChangelogRepository{db},
+		ChangelogTags:   &ChangelogTagRepository{db},
 	}
 }

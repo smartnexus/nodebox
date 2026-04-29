@@ -40,6 +40,7 @@
       "notifiers": "Notifiers",
       "settings": "Settings",
       "entity_types": "Entity Types",
+      "changelog_tags": "Changelog Tags",
       "tools": "Tools"
     },
     "uses": "Uses"
@@ -926,11 +927,31 @@
     "add_entry": "Add Entry",
     "summary_label": "Summary",
     "summary_placeholder": "Describe the change made to this item...",
+    "tag_label": "Category",
+    "tag_placeholder": "Select a category (optional)",
+    "tag_none": "No category",
     "no_entries": "No changelog entries yet.",
     "toast": {
       "failed_load": "Failed to load changelog",
       "failed_create": "Failed to create changelog entry",
       "created": "Changelog entry created"
+    }
+  },
+  "changelog_tags": {
+    "title": "Changelog Categories",
+    "add": "Add Category",
+    "name_label": "Name",
+    "name_placeholder": "e.g. Repair, Upgrade, Purchase...",
+    "color_label": "Color",
+    "empty": "No changelog categories defined yet.",
+    "delete_confirm": "Are you sure you want to delete the category \"{name}\"? Existing changelog entries will lose this category.",
+    "toast": {
+      "failed_load": "Failed to load changelog categories",
+      "failed_create": "Failed to create category",
+      "created": "Category created",
+      "failed_delete": "Failed to delete category",
+      "deleted": "Category deleted",
+      "name_required": "Name is required"
     }
   }
 }

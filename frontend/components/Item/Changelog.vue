@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { toast } from "@/components/ui/sonner";
   import { useI18n } from "vue-i18n";
-  import type { ChangelogEntry } from "~~/lib/api/types/data-contracts";
+  import type { ChangelogEntry, ChangelogTagOut } from "~~/lib/api/types/data-contracts";
   import MdiHistory from "~icons/mdi/history";
   import MdiPlus from "~icons/mdi/plus";
   import DateTime from "~/components/global/DateTime.vue";
@@ -9,6 +9,8 @@
   import { Button } from "@/components/ui/button";
   import { Input } from "@/components/ui/input";
   import { Label } from "@/components/ui/label";
+  import { Badge } from "@/components/ui/badge";
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
   interface Props {
     itemId: string;
@@ -23,7 +25,15 @@
   const loading = ref(false);
   const showForm = ref(false);
   const newSummary = ref("");
+  const newTagId = ref("");
   const submitting = ref(false);
+
+  const availableTags = ref<ChangelogTagOut[]>([]);
+
+  async function loadTags() {
+    const { data } = await api.changelogTags.getAll();
+    availableTags.value = data ?? [];
+  }
 
   async function loadEntries() {
     loading.value = true;
@@ -47,7 +57,12 @@
 
     submitting.value = true;
     try {
-      const { data, error } = await api.changelog.create(props.itemId, { summary });
+      const payload: { summary: string; tagId?: string } = { summary };
+      if (newTagId.value) {
+        payload.tagId = newTagId.value;
+      }
+
+      const { data, error } = await api.changelog.create(props.itemId, payload);
       if (error) {
         toast.error(t("changelog.toast.failed_create"));
         return;
@@ -56,6 +71,7 @@
         entries.value.unshift(data);
       }
       newSummary.value = "";
+      newTagId.value = "";
       showForm.value = false;
       toast.success(t("changelog.toast.created"));
     } finally {
@@ -63,8 +79,15 @@
     }
   }
 
+  /** Return badge colour classes from a hex/named colour, falling back to secondary. */
+  function badgeStyle(color: string | undefined | null): Record<string, string> {
+    if (!color) return {};
+    return { backgroundColor: color, color: "#fff", borderColor: color };
+  }
+
   onMounted(() => {
     loadEntries();
+    loadTags();
   });
 </script>
 
@@ -92,6 +115,23 @@
           maxlength="500"
           @keyup.enter="createEntry"
         />
+
+        <!-- Tag selector -->
+        <div v-if="availableTags.length > 0" class="flex flex-col gap-1">
+          <Label>{{ $t("changelog.tag_label") }}</Label>
+          <Select v-model="newTagId">
+            <SelectTrigger>
+              <SelectValue :placeholder="$t('changelog.tag_placeholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{{ $t("changelog.tag_none") }}</SelectItem>
+              <SelectItem v-for="tag in availableTags" :key="tag.id" :value="tag.id">
+                {{ tag.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div class="flex gap-2">
           <Button size="sm" :disabled="submitting || !newSummary.trim()" @click="createEntry">
             {{ $t("global.save") }}
@@ -102,6 +142,7 @@
             @click="
               showForm = false;
               newSummary = '';
+              newTagId = '';
             "
           >
             {{ $t("global.cancel") }}
@@ -119,7 +160,12 @@
     </div>
     <ul v-else class="divide-y">
       <li v-for="entry in entries" :key="entry.id" class="flex flex-col gap-1 px-4 py-3">
-        <p class="text-sm">{{ entry.summary }}</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="flex-1 text-sm">{{ entry.summary }}</p>
+          <Badge v-if="entry.tag" variant="secondary" class="shrink-0 text-xs" :style="badgeStyle(entry.tag.color)">
+            {{ entry.tag.name }}
+          </Badge>
+        </div>
         <p class="text-xs text-foreground/50">
           <DateTime :date="entry.createdAt" />
         </p>

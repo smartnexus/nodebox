@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
@@ -38,6 +39,7 @@ type GroupQuery struct {
 	withInvitationTokens *GroupInvitationTokenQuery
 	withNotifiers        *NotifierQuery
 	withEntityTemplates  *EntityTemplateQuery
+	withChangelogTags    *ChangelogTagQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -221,6 +223,28 @@ func (_q *GroupQuery) QueryEntityTemplates() *EntityTemplateQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(entitytemplate.Table, entitytemplate.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.EntityTemplatesTable, group.EntityTemplatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryChangelogTags chains the current query on the "changelog_tags" edge.
+func (_q *GroupQuery) QueryChangelogTags() *ChangelogTagQuery {
+	query := (&ChangelogTagClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(changelogtag.Table, changelogtag.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.ChangelogTagsTable, group.ChangelogTagsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -427,6 +451,7 @@ func (_q *GroupQuery) Clone() *GroupQuery {
 		withInvitationTokens: _q.withInvitationTokens.Clone(),
 		withNotifiers:        _q.withNotifiers.Clone(),
 		withEntityTemplates:  _q.withEntityTemplates.Clone(),
+		withChangelogTags:    _q.withChangelogTags.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -510,6 +535,17 @@ func (_q *GroupQuery) WithEntityTemplates(opts ...func(*EntityTemplateQuery)) *G
 	return _q
 }
 
+// WithChangelogTags tells the query-builder to eager-load the nodes that are connected to
+// the "changelog_tags" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroupQuery) WithChangelogTags(opts ...func(*ChangelogTagQuery)) *GroupQuery {
+	query := (&ChangelogTagClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withChangelogTags = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -588,7 +624,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = _q.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			_q.withUsers != nil,
 			_q.withEntityTypes != nil,
 			_q.withEntities != nil,
@@ -596,6 +632,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			_q.withInvitationTokens != nil,
 			_q.withNotifiers != nil,
 			_q.withEntityTemplates != nil,
+			_q.withChangelogTags != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -664,6 +701,13 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		if err := _q.loadEntityTemplates(ctx, query, nodes,
 			func(n *Group) { n.Edges.EntityTemplates = []*EntityTemplate{} },
 			func(n *Group, e *EntityTemplate) { n.Edges.EntityTemplates = append(n.Edges.EntityTemplates, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withChangelogTags; query != nil {
+		if err := _q.loadChangelogTags(ctx, query, nodes,
+			func(n *Group) { n.Edges.ChangelogTags = []*ChangelogTag{} },
+			func(n *Group, e *ChangelogTag) { n.Edges.ChangelogTags = append(n.Edges.ChangelogTags, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -911,6 +955,37 @@ func (_q *GroupQuery) loadEntityTemplates(ctx context.Context, query *EntityTemp
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "group_entity_templates" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GroupQuery) loadChangelogTags(ctx context.Context, query *ChangelogTagQuery, nodes []*Group, init func(*Group), assign func(*Group, *ChangelogTag)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ChangelogTag(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(group.ChangelogTagsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.group_changelog_tags
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "group_changelog_tags" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "group_changelog_tags" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

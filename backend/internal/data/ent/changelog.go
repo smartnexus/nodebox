@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 )
 
@@ -27,6 +28,8 @@ type Changelog struct {
 	EntityID uuid.UUID `json:"entity_id,omitempty"`
 	// Summary holds the value of the "summary" field.
 	Summary string `json:"summary,omitempty"`
+	// TagID holds the value of the "tag_id" field.
+	TagID *uuid.UUID `json:"tag_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ChangelogQuery when eager-loading is set.
 	Edges        ChangelogEdges `json:"edges"`
@@ -37,9 +40,11 @@ type Changelog struct {
 type ChangelogEdges struct {
 	// Entity holds the value of the entity edge.
 	Entity *Entity `json:"entity,omitempty"`
+	// Tag holds the value of the tag edge.
+	Tag *ChangelogTag `json:"tag,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // EntityOrErr returns the Entity value or an error if the edge
@@ -53,11 +58,24 @@ func (e ChangelogEdges) EntityOrErr() (*Entity, error) {
 	return nil, &NotLoadedError{edge: "entity"}
 }
 
+// TagOrErr returns the Tag value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ChangelogEdges) TagOrErr() (*ChangelogTag, error) {
+	if e.Tag != nil {
+		return e.Tag, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: changelogtag.Label}
+	}
+	return nil, &NotLoadedError{edge: "tag"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Changelog) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case changelog.FieldTagID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case changelog.FieldSummary:
 			values[i] = new(sql.NullString)
 		case changelog.FieldCreatedAt, changelog.FieldUpdatedAt:
@@ -109,6 +127,13 @@ func (_m *Changelog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Summary = value.String
 			}
+		case changelog.FieldTagID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field tag_id", values[i])
+			} else if value.Valid {
+				_m.TagID = new(uuid.UUID)
+				*_m.TagID = *value.S.(*uuid.UUID)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -125,6 +150,11 @@ func (_m *Changelog) Value(name string) (ent.Value, error) {
 // QueryEntity queries the "entity" edge of the Changelog entity.
 func (_m *Changelog) QueryEntity() *EntityQuery {
 	return NewChangelogClient(_m.config).QueryEntity(_m)
+}
+
+// QueryTag queries the "tag" edge of the Changelog entity.
+func (_m *Changelog) QueryTag() *ChangelogTagQuery {
+	return NewChangelogClient(_m.config).QueryTag(_m)
 }
 
 // Update returns a builder for updating this Changelog.
@@ -161,6 +191,11 @@ func (_m *Changelog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("summary=")
 	builder.WriteString(_m.Summary)
+	builder.WriteString(", ")
+	if v := _m.TagID; v != nil {
+		builder.WriteString("tag_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
