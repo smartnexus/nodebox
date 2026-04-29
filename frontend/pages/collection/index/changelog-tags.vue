@@ -154,7 +154,7 @@
           <Badge variant="secondary" class="shrink-0 text-xs" :style="badgeStyle(tag.color)">
             {{ tag.name }}
           </Badge>
-          <span class="mr-auto text-sm font-medium">{{ tag.name }}</span>
+          <span class="mr-auto" />
           <TooltipProvider :delay-duration="0">
             <Tooltip>
               <TooltipTrigger as-child>
