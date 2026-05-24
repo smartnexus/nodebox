@@ -21,11 +21,13 @@
   const { t } = useI18n();
   const api = useUserApi();
 
+  const NO_TAG_SELECTED = "__none__";
+
   const entries = ref<ChangelogEntry[]>([]);
   const loading = ref(false);
   const showForm = ref(false);
   const newSummary = ref("");
-  const newTagId = ref("__none__");
+  const newTagId = ref(NO_TAG_SELECTED);
   const submitting = ref(false);
 
   const availableTags = ref<ChangelogTagOut[]>([]);
@@ -58,7 +60,7 @@
     submitting.value = true;
     try {
       const payload: { summary: string; tagId?: string } = { summary };
-      if (newTagId.value && newTagId.value !== "__none__") {
+      if (newTagId.value !== NO_TAG_SELECTED) {
         payload.tagId = newTagId.value;
       }
 
@@ -71,7 +73,7 @@
         entries.value.unshift(data);
       }
       newSummary.value = "";
-      newTagId.value = "__none__";
+      newTagId.value = NO_TAG_SELECTED;
       showForm.value = false;
       toast.success(t("changelog.toast.created"));
     } finally {
@@ -124,7 +126,7 @@
               <SelectValue :placeholder="$t('changelog.tag_placeholder')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">{{ $t("changelog.tag_none") }}</SelectItem>
+              <SelectItem :value="NO_TAG_SELECTED">{{ $t("changelog.tag_none") }}</SelectItem>
               <SelectItem v-for="tag in availableTags" :key="tag.id" :value="tag.id">
                 {{ tag.name }}
               </SelectItem>
@@ -142,7 +144,7 @@
             @click="
               showForm = false;
               newSummary = '';
-              newTagId = '__none__';
+              newTagId = NO_TAG_SELECTED;
             "
           >
             {{ $t("global.cancel") }}
