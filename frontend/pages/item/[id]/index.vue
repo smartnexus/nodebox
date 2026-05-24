@@ -45,6 +45,7 @@
   import DetailsSection from "~/components/global/DetailsSection/DetailsSection.vue";
   import ItemAttachmentsList from "~/components/Item/AttachmentsList.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
+  import ItemChangelog from "~/components/Item/Changelog.vue";
 
   const { t } = useI18n();
 
@@ -866,6 +867,9 @@
             <template #title> {{ $t("items.sold_details") }} </template>
             <DetailsSection :details="soldDetails" />
           </BaseCard>
+
+          <!-- Changelog section -->
+          <ItemChangelog :item-id="item.id" />
         </template>
       </div>
     </section>

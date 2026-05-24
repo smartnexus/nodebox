@@ -120,5 +120,6 @@ func (Entity) Edges() []ent.Edge {
 		owned("fields", EntityField.Type),
 		owned("maintenance_entries", MaintenanceEntry.Type),
 		owned("attachments", Attachment.Type),
+		owned("changelog_entries", Changelog.Type),
 	}
 }

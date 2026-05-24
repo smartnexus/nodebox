@@ -140,6 +140,58 @@ export interface EntAuthTokensEdges {
   user: EntUser;
 }
 
+export interface EntChangelog {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the ChangelogQuery when eager-loading is set.
+   */
+  edges: EntChangelogEdges;
+  /** EntityID holds the value of the "entity_id" field. */
+  entity_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** Summary holds the value of the "summary" field. */
+  summary: string;
+  /** TagID holds the value of the "tag_id" field. */
+  tag_id: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntChangelogEdges {
+  /** Entity holds the value of the entity edge. */
+  entity: EntEntity;
+  /** Tag holds the value of the tag edge. */
+  tag: EntChangelogTag;
+}
+
+export interface EntChangelogTag {
+  /** Color holds the value of the "color" field. */
+  color: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the ChangelogTagQuery when eager-loading is set.
+   */
+  edges: EntChangelogTagEdges;
+  /** ID of the ent. */
+  id: string;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntChangelogTagEdges {
+  /** Changelogs holds the value of the changelogs edge. */
+  changelogs: EntChangelog[];
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
+}
+
 export interface EntEntity {
   /** Archived holds the value of the "archived" field. */
   archived: boolean;
@@ -201,6 +253,8 @@ export interface EntEntity {
 export interface EntEntityEdges {
   /** Attachments holds the value of the attachments edge. */
   attachments: EntAttachment[];
+  /** ChangelogEntries holds the value of the changelog_entries edge. */
+  changelog_entries: EntChangelog[];
   /** Children holds the value of the children edge. */
   children: EntEntity[];
   /** EntityType holds the value of the entity_type edge. */
@@ -353,6 +407,8 @@ export interface EntGroup {
 }
 
 export interface EntGroupEdges {
+  /** ChangelogTags holds the value of the changelog_tags edge. */
+  changelog_tags: EntChangelogTag[];
   /** Entities holds the value of the entities edge. */
   entities: EntEntity[];
   /** EntityTemplates holds the value of the entity_templates edge. */
@@ -574,6 +630,37 @@ export interface BarcodeProduct {
   /** Extras */
   notes: string;
   search_engine_name: string;
+}
+
+export interface ChangelogEntry {
+  createdAt: Date | string;
+  entityId: string;
+  id: string;
+  summary: string;
+  tag: ChangelogTagSummary;
+}
+
+export interface ChangelogEntryCreate {
+  summary: string;
+  tagId: string;
+}
+
+export interface ChangelogTagCreate {
+  color: string;
+  name: string;
+}
+
+export interface ChangelogTagOut {
+  color: string;
+  createdAt: Date | string;
+  id: string;
+  name: string;
+}
+
+export interface ChangelogTagSummary {
+  color: string;
+  id: string;
+  name: string;
 }
 
 export interface DuplicateOptions {

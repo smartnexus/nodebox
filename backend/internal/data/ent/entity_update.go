@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
@@ -571,6 +572,21 @@ func (_u *EntityUpdate) AddAttachments(v ...*Attachment) *EntityUpdate {
 	return _u.AddAttachmentIDs(ids...)
 }
 
+// AddChangelogEntryIDs adds the "changelog_entries" edge to the Changelog entity by IDs.
+func (_u *EntityUpdate) AddChangelogEntryIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.AddChangelogEntryIDs(ids...)
+	return _u
+}
+
+// AddChangelogEntries adds the "changelog_entries" edges to the Changelog entity.
+func (_u *EntityUpdate) AddChangelogEntries(v ...*Changelog) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddChangelogEntryIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdate) Mutation() *EntityMutation {
 	return _u.mutation
@@ -697,6 +713,27 @@ func (_u *EntityUpdate) RemoveAttachments(v ...*Attachment) *EntityUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAttachmentIDs(ids...)
+}
+
+// ClearChangelogEntries clears all "changelog_entries" edges to the Changelog entity.
+func (_u *EntityUpdate) ClearChangelogEntries() *EntityUpdate {
+	_u.mutation.ClearChangelogEntries()
+	return _u
+}
+
+// RemoveChangelogEntryIDs removes the "changelog_entries" edge to Changelog entities by IDs.
+func (_u *EntityUpdate) RemoveChangelogEntryIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.RemoveChangelogEntryIDs(ids...)
+	return _u
+}
+
+// RemoveChangelogEntries removes "changelog_entries" edges to Changelog entities.
+func (_u *EntityUpdate) RemoveChangelogEntries(v ...*Changelog) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveChangelogEntryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1228,6 +1265,51 @@ func (_u *EntityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ChangelogEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedChangelogEntriesIDs(); len(nodes) > 0 && !_u.mutation.ChangelogEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ChangelogEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1791,6 +1873,21 @@ func (_u *EntityUpdateOne) AddAttachments(v ...*Attachment) *EntityUpdateOne {
 	return _u.AddAttachmentIDs(ids...)
 }
 
+// AddChangelogEntryIDs adds the "changelog_entries" edge to the Changelog entity by IDs.
+func (_u *EntityUpdateOne) AddChangelogEntryIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.AddChangelogEntryIDs(ids...)
+	return _u
+}
+
+// AddChangelogEntries adds the "changelog_entries" edges to the Changelog entity.
+func (_u *EntityUpdateOne) AddChangelogEntries(v ...*Changelog) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddChangelogEntryIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdateOne) Mutation() *EntityMutation {
 	return _u.mutation
@@ -1917,6 +2014,27 @@ func (_u *EntityUpdateOne) RemoveAttachments(v ...*Attachment) *EntityUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAttachmentIDs(ids...)
+}
+
+// ClearChangelogEntries clears all "changelog_entries" edges to the Changelog entity.
+func (_u *EntityUpdateOne) ClearChangelogEntries() *EntityUpdateOne {
+	_u.mutation.ClearChangelogEntries()
+	return _u
+}
+
+// RemoveChangelogEntryIDs removes the "changelog_entries" edge to Changelog entities by IDs.
+func (_u *EntityUpdateOne) RemoveChangelogEntryIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.RemoveChangelogEntryIDs(ids...)
+	return _u
+}
+
+// RemoveChangelogEntries removes "changelog_entries" edges to Changelog entities.
+func (_u *EntityUpdateOne) RemoveChangelogEntries(v ...*Changelog) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveChangelogEntryIDs(ids...)
 }
 
 // Where appends a list predicates to the EntityUpdate builder.
@@ -2478,6 +2596,51 @@ func (_u *EntityUpdateOne) sqlSave(ctx context.Context) (_node *Entity, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ChangelogEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedChangelogEntriesIDs(); len(nodes) > 0 && !_u.mutation.ChangelogEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ChangelogEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.ChangelogEntriesTable,
+			Columns: []string{entity.ChangelogEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelog.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

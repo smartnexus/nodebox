@@ -18,6 +18,10 @@ type Tx struct {
 	AuthRoles *AuthRolesClient
 	// AuthTokens is the client for interacting with the AuthTokens builders.
 	AuthTokens *AuthTokensClient
+	// Changelog is the client for interacting with the Changelog builders.
+	Changelog *ChangelogClient
+	// ChangelogTag is the client for interacting with the ChangelogTag builders.
+	ChangelogTag *ChangelogTagClient
 	// Entity is the client for interacting with the Entity builders.
 	Entity *EntityClient
 	// EntityField is the client for interacting with the EntityField builders.
@@ -174,6 +178,8 @@ func (tx *Tx) init() {
 	tx.Attachment = NewAttachmentClient(tx.config)
 	tx.AuthRoles = NewAuthRolesClient(tx.config)
 	tx.AuthTokens = NewAuthTokensClient(tx.config)
+	tx.Changelog = NewChangelogClient(tx.config)
+	tx.ChangelogTag = NewChangelogTagClient(tx.config)
 	tx.Entity = NewEntityClient(tx.config)
 	tx.EntityField = NewEntityFieldClient(tx.config)
 	tx.EntityTemplate = NewEntityTemplateClient(tx.config)

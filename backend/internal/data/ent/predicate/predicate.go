@@ -15,6 +15,12 @@ type AuthRoles func(*sql.Selector)
 // AuthTokens is the predicate function for authtokens builders.
 type AuthTokens func(*sql.Selector)
 
+// Changelog is the predicate function for changelog builders.
+type Changelog func(*sql.Selector)
+
+// ChangelogTag is the predicate function for changelogtag builders.
+type ChangelogTag func(*sql.Selector)
+
 // Entity is the predicate function for entity builders.
 type Entity func(*sql.Selector)
 

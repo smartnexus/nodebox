@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
@@ -175,6 +176,21 @@ func (_u *GroupUpdate) AddEntityTemplates(v ...*EntityTemplate) *GroupUpdate {
 	return _u.AddEntityTemplateIDs(ids...)
 }
 
+// AddChangelogTagIDs adds the "changelog_tags" edge to the ChangelogTag entity by IDs.
+func (_u *GroupUpdate) AddChangelogTagIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddChangelogTagIDs(ids...)
+	return _u
+}
+
+// AddChangelogTags adds the "changelog_tags" edges to the ChangelogTag entity.
+func (_u *GroupUpdate) AddChangelogTags(v ...*ChangelogTag) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddChangelogTagIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (_u *GroupUpdate) Mutation() *GroupMutation {
 	return _u.mutation
@@ -325,6 +341,27 @@ func (_u *GroupUpdate) RemoveEntityTemplates(v ...*EntityTemplate) *GroupUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEntityTemplateIDs(ids...)
+}
+
+// ClearChangelogTags clears all "changelog_tags" edges to the ChangelogTag entity.
+func (_u *GroupUpdate) ClearChangelogTags() *GroupUpdate {
+	_u.mutation.ClearChangelogTags()
+	return _u
+}
+
+// RemoveChangelogTagIDs removes the "changelog_tags" edge to ChangelogTag entities by IDs.
+func (_u *GroupUpdate) RemoveChangelogTagIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveChangelogTagIDs(ids...)
+	return _u
+}
+
+// RemoveChangelogTags removes "changelog_tags" edges to ChangelogTag entities.
+func (_u *GroupUpdate) RemoveChangelogTags(v ...*ChangelogTag) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveChangelogTagIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -709,6 +746,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ChangelogTagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedChangelogTagsIDs(); len(nodes) > 0 && !_u.mutation.ChangelogTagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ChangelogTagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -868,6 +950,21 @@ func (_u *GroupUpdateOne) AddEntityTemplates(v ...*EntityTemplate) *GroupUpdateO
 	return _u.AddEntityTemplateIDs(ids...)
 }
 
+// AddChangelogTagIDs adds the "changelog_tags" edge to the ChangelogTag entity by IDs.
+func (_u *GroupUpdateOne) AddChangelogTagIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddChangelogTagIDs(ids...)
+	return _u
+}
+
+// AddChangelogTags adds the "changelog_tags" edges to the ChangelogTag entity.
+func (_u *GroupUpdateOne) AddChangelogTags(v ...*ChangelogTag) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddChangelogTagIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (_u *GroupUpdateOne) Mutation() *GroupMutation {
 	return _u.mutation
@@ -1018,6 +1115,27 @@ func (_u *GroupUpdateOne) RemoveEntityTemplates(v ...*EntityTemplate) *GroupUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEntityTemplateIDs(ids...)
+}
+
+// ClearChangelogTags clears all "changelog_tags" edges to the ChangelogTag entity.
+func (_u *GroupUpdateOne) ClearChangelogTags() *GroupUpdateOne {
+	_u.mutation.ClearChangelogTags()
+	return _u
+}
+
+// RemoveChangelogTagIDs removes the "changelog_tags" edge to ChangelogTag entities by IDs.
+func (_u *GroupUpdateOne) RemoveChangelogTagIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveChangelogTagIDs(ids...)
+	return _u
+}
+
+// RemoveChangelogTags removes "changelog_tags" edges to ChangelogTag entities.
+func (_u *GroupUpdateOne) RemoveChangelogTags(v ...*ChangelogTag) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveChangelogTagIDs(ids...)
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -1425,6 +1543,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entitytemplate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ChangelogTagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedChangelogTagsIDs(); len(nodes) > 0 && !_u.mutation.ChangelogTagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ChangelogTagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.ChangelogTagsTable,
+			Columns: []string{group.ChangelogTagsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(changelogtag.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -11,6 +11,7 @@
   import MdiCog from "~icons/mdi/cog";
   import MdiShape from "~icons/mdi/shape";
   import MdiWrench from "~icons/mdi/wrench";
+  import MdiTag from "~icons/mdi/tag";
   import MdiLogout from "~icons/mdi/logout";
   import MdiDelete from "~icons/mdi/delete";
   import type { UserSummary } from "~/lib/api/types/data-contracts";
@@ -60,6 +61,12 @@
       label: "collection.tabs.entity_types",
       to: "/collection/entity-types",
       icon: MdiShape,
+    },
+    {
+      id: "changelog-tags",
+      label: "collection.tabs.changelog_tags",
+      to: "/collection/changelog-tags",
+      icon: MdiTag,
     },
     {
       id: "tools",

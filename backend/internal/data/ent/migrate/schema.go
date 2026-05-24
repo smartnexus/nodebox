@@ -91,6 +91,65 @@ var (
 			},
 		},
 	}
+	// ChangelogsColumns holds the columns for the "changelogs" table.
+	ChangelogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "summary", Type: field.TypeString, Size: 500},
+		{Name: "tag_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "entity_id", Type: field.TypeUUID},
+	}
+	// ChangelogsTable holds the schema information for the "changelogs" table.
+	ChangelogsTable = &schema.Table{
+		Name:       "changelogs",
+		Columns:    ChangelogsColumns,
+		PrimaryKey: []*schema.Column{ChangelogsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "changelogs_changelog_tags_changelogs",
+				Columns:    []*schema.Column{ChangelogsColumns[4]},
+				RefColumns: []*schema.Column{ChangelogTagsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "changelogs_entities_changelog_entries",
+				Columns:    []*schema.Column{ChangelogsColumns[5]},
+				RefColumns: []*schema.Column{EntitiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "changelog_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogsColumns[5]},
+			},
+		},
+	}
+	// ChangelogTagsColumns holds the columns for the "changelog_tags" table.
+	ChangelogTagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "color", Type: field.TypeString, Nullable: true, Size: 20, Default: ""},
+		{Name: "group_changelog_tags", Type: field.TypeUUID},
+	}
+	// ChangelogTagsTable holds the schema information for the "changelog_tags" table.
+	ChangelogTagsTable = &schema.Table{
+		Name:       "changelog_tags",
+		Columns:    ChangelogTagsColumns,
+		PrimaryKey: []*schema.Column{ChangelogTagsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "changelog_tags_groups_changelog_tags",
+				Columns:    []*schema.Column{ChangelogTagsColumns[5]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// EntitiesColumns holds the columns for the "entities" table.
 	EntitiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -552,6 +611,8 @@ var (
 		AttachmentsTable,
 		AuthRolesTable,
 		AuthTokensTable,
+		ChangelogsTable,
+		ChangelogTagsTable,
 		EntitiesTable,
 		EntityFieldsTable,
 		EntityTemplatesTable,
@@ -573,6 +634,9 @@ func init() {
 	AttachmentsTable.ForeignKeys[1].RefTable = EntitiesTable
 	AuthRolesTable.ForeignKeys[0].RefTable = AuthTokensTable
 	AuthTokensTable.ForeignKeys[0].RefTable = UsersTable
+	ChangelogsTable.ForeignKeys[0].RefTable = ChangelogTagsTable
+	ChangelogsTable.ForeignKeys[1].RefTable = EntitiesTable
+	ChangelogTagsTable.ForeignKeys[0].RefTable = GroupsTable
 	EntitiesTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntitiesTable.ForeignKeys[1].RefTable = EntityTypesTable
 	EntitiesTable.ForeignKeys[2].RefTable = GroupsTable

@@ -148,6 +148,80 @@ definitions:
         - $ref: '#/definitions/ent.User'
         description: User holds the value of the user edge.
     type: object
+  ent.Changelog:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ChangelogEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ChangelogQuery when eager-loading is set.
+      entity_id:
+        description: EntityID holds the value of the "entity_id" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      summary:
+        description: Summary holds the value of the "summary" field.
+        type: string
+      tag_id:
+        description: TagID holds the value of the "tag_id" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.ChangelogEdges:
+    properties:
+      entity:
+        allOf:
+        - $ref: '#/definitions/ent.Entity'
+        description: Entity holds the value of the entity edge.
+      tag:
+        allOf:
+        - $ref: '#/definitions/ent.ChangelogTag'
+        description: Tag holds the value of the tag edge.
+    type: object
+  ent.ChangelogTag:
+    properties:
+      color:
+        description: Color holds the value of the "color" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ChangelogTagEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ChangelogTagQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: string
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.ChangelogTagEdges:
+    properties:
+      changelogs:
+        description: Changelogs holds the value of the changelogs edge.
+        items:
+          $ref: '#/definitions/ent.Changelog'
+        type: array
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
+    type: object
   ent.Entity:
     properties:
       archived:
@@ -239,6 +313,11 @@ definitions:
         description: Attachments holds the value of the attachments edge.
         items:
           $ref: '#/definitions/ent.Attachment'
+        type: array
+      changelog_entries:
+        description: ChangelogEntries holds the value of the changelog_entries edge.
+        items:
+          $ref: '#/definitions/ent.Changelog'
         type: array
       children:
         description: Children holds the value of the children edge.
@@ -479,6 +558,11 @@ definitions:
     type: object
   ent.GroupEdges:
     properties:
+      changelog_tags:
+        description: ChangelogTags holds the value of the changelog_tags edge.
+        items:
+          $ref: '#/definitions/ent.ChangelogTag'
+        type: array
       entities:
         description: Entities holds the value of the entities edge.
         items:
@@ -833,6 +917,24 @@ definitions:
         type: string
       search_engine_name:
         type: string
+    type: object
+  repo.ChangelogEntry:
+    properties:
+      createdAt:
+        type: string
+      entityId:
+        type: string
+      id:
+        type: string
+      summary:
+        type: string
+    type: object
+  repo.ChangelogEntryCreate:
+    properties:
+      summary:
+        type: string
+    required:
+    - summary
     type: object
   repo.DuplicateOptions:
     properties:
@@ -2437,6 +2539,53 @@ paths:
       summary: Update Entity Attachment
       tags:
       - Entities Attachments
+  /v1/entities/{id}/changelog:
+    get:
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.ChangelogEntry'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get Changelog
+      tags:
+      - Item Changelog
+    post:
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Entry Data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/repo.ChangelogEntryCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/repo.ChangelogEntry'
+      security:
+      - Bearer: []
+      summary: Create Changelog Entry
+      tags:
+      - Item Changelog
   /v1/entities/{id}/duplicate:
     post:
       parameters:

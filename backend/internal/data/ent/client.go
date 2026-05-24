@@ -19,6 +19,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/changelogtag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
@@ -43,6 +45,10 @@ type Client struct {
 	AuthRoles *AuthRolesClient
 	// AuthTokens is the client for interacting with the AuthTokens builders.
 	AuthTokens *AuthTokensClient
+	// Changelog is the client for interacting with the Changelog builders.
+	Changelog *ChangelogClient
+	// ChangelogTag is the client for interacting with the ChangelogTag builders.
+	ChangelogTag *ChangelogTagClient
 	// Entity is the client for interacting with the Entity builders.
 	Entity *EntityClient
 	// EntityField is the client for interacting with the EntityField builders.
@@ -79,6 +85,8 @@ func (c *Client) init() {
 	c.Attachment = NewAttachmentClient(c.config)
 	c.AuthRoles = NewAuthRolesClient(c.config)
 	c.AuthTokens = NewAuthTokensClient(c.config)
+	c.Changelog = NewChangelogClient(c.config)
+	c.ChangelogTag = NewChangelogTagClient(c.config)
 	c.Entity = NewEntityClient(c.config)
 	c.EntityField = NewEntityFieldClient(c.config)
 	c.EntityTemplate = NewEntityTemplateClient(c.config)
@@ -185,6 +193,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Attachment:           NewAttachmentClient(cfg),
 		AuthRoles:            NewAuthRolesClient(cfg),
 		AuthTokens:           NewAuthTokensClient(cfg),
+		Changelog:            NewChangelogClient(cfg),
+		ChangelogTag:         NewChangelogTagClient(cfg),
 		Entity:               NewEntityClient(cfg),
 		EntityField:          NewEntityFieldClient(cfg),
 		EntityTemplate:       NewEntityTemplateClient(cfg),
@@ -218,6 +228,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Attachment:           NewAttachmentClient(cfg),
 		AuthRoles:            NewAuthRolesClient(cfg),
 		AuthTokens:           NewAuthTokensClient(cfg),
+		Changelog:            NewChangelogClient(cfg),
+		ChangelogTag:         NewChangelogTagClient(cfg),
 		Entity:               NewEntityClient(cfg),
 		EntityField:          NewEntityFieldClient(cfg),
 		EntityTemplate:       NewEntityTemplateClient(cfg),
@@ -258,8 +270,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
-		c.EntityTemplate, c.EntityType, c.Group, c.GroupInvitationToken,
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Changelog, c.ChangelogTag, c.Entity,
+		c.EntityField, c.EntityTemplate, c.EntityType, c.Group, c.GroupInvitationToken,
 		c.MaintenanceEntry, c.Notifier, c.Tag, c.TemplateField, c.User,
 	} {
 		n.Use(hooks...)
@@ -270,8 +282,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
-		c.EntityTemplate, c.EntityType, c.Group, c.GroupInvitationToken,
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Changelog, c.ChangelogTag, c.Entity,
+		c.EntityField, c.EntityTemplate, c.EntityType, c.Group, c.GroupInvitationToken,
 		c.MaintenanceEntry, c.Notifier, c.Tag, c.TemplateField, c.User,
 	} {
 		n.Intercept(interceptors...)
@@ -287,6 +299,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AuthRoles.mutate(ctx, m)
 	case *AuthTokensMutation:
 		return c.AuthTokens.mutate(ctx, m)
+	case *ChangelogMutation:
+		return c.Changelog.mutate(ctx, m)
+	case *ChangelogTagMutation:
+		return c.ChangelogTag.mutate(ctx, m)
 	case *EntityMutation:
 		return c.Entity.mutate(ctx, m)
 	case *EntityFieldMutation:
@@ -793,6 +809,336 @@ func (c *AuthTokensClient) mutate(ctx context.Context, m *AuthTokensMutation) (V
 	}
 }
 
+// ChangelogClient is a client for the Changelog schema.
+type ChangelogClient struct {
+	config
+}
+
+// NewChangelogClient returns a client for the Changelog from the given config.
+func NewChangelogClient(c config) *ChangelogClient {
+	return &ChangelogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `changelog.Hooks(f(g(h())))`.
+func (c *ChangelogClient) Use(hooks ...Hook) {
+	c.hooks.Changelog = append(c.hooks.Changelog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `changelog.Intercept(f(g(h())))`.
+func (c *ChangelogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Changelog = append(c.inters.Changelog, interceptors...)
+}
+
+// Create returns a builder for creating a Changelog entity.
+func (c *ChangelogClient) Create() *ChangelogCreate {
+	mutation := newChangelogMutation(c.config, OpCreate)
+	return &ChangelogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Changelog entities.
+func (c *ChangelogClient) CreateBulk(builders ...*ChangelogCreate) *ChangelogCreateBulk {
+	return &ChangelogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ChangelogClient) MapCreateBulk(slice any, setFunc func(*ChangelogCreate, int)) *ChangelogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ChangelogCreateBulk{err: fmt.Errorf("calling to ChangelogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ChangelogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ChangelogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Changelog.
+func (c *ChangelogClient) Update() *ChangelogUpdate {
+	mutation := newChangelogMutation(c.config, OpUpdate)
+	return &ChangelogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ChangelogClient) UpdateOne(_m *Changelog) *ChangelogUpdateOne {
+	mutation := newChangelogMutation(c.config, OpUpdateOne, withChangelog(_m))
+	return &ChangelogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ChangelogClient) UpdateOneID(id uuid.UUID) *ChangelogUpdateOne {
+	mutation := newChangelogMutation(c.config, OpUpdateOne, withChangelogID(id))
+	return &ChangelogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Changelog.
+func (c *ChangelogClient) Delete() *ChangelogDelete {
+	mutation := newChangelogMutation(c.config, OpDelete)
+	return &ChangelogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ChangelogClient) DeleteOne(_m *Changelog) *ChangelogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ChangelogClient) DeleteOneID(id uuid.UUID) *ChangelogDeleteOne {
+	builder := c.Delete().Where(changelog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ChangelogDeleteOne{builder}
+}
+
+// Query returns a query builder for Changelog.
+func (c *ChangelogClient) Query() *ChangelogQuery {
+	return &ChangelogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeChangelog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Changelog entity by its id.
+func (c *ChangelogClient) Get(ctx context.Context, id uuid.UUID) (*Changelog, error) {
+	return c.Query().Where(changelog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ChangelogClient) GetX(ctx context.Context, id uuid.UUID) *Changelog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryEntity queries the entity edge of a Changelog.
+func (c *ChangelogClient) QueryEntity(_m *Changelog) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(changelog.Table, changelog.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, changelog.EntityTable, changelog.EntityColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTag queries the tag edge of a Changelog.
+func (c *ChangelogClient) QueryTag(_m *Changelog) *ChangelogTagQuery {
+	query := (&ChangelogTagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(changelog.Table, changelog.FieldID, id),
+			sqlgraph.To(changelogtag.Table, changelogtag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, changelog.TagTable, changelog.TagColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ChangelogClient) Hooks() []Hook {
+	return c.hooks.Changelog
+}
+
+// Interceptors returns the client interceptors.
+func (c *ChangelogClient) Interceptors() []Interceptor {
+	return c.inters.Changelog
+}
+
+func (c *ChangelogClient) mutate(ctx context.Context, m *ChangelogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ChangelogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ChangelogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ChangelogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ChangelogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Changelog mutation op: %q", m.Op())
+	}
+}
+
+// ChangelogTagClient is a client for the ChangelogTag schema.
+type ChangelogTagClient struct {
+	config
+}
+
+// NewChangelogTagClient returns a client for the ChangelogTag from the given config.
+func NewChangelogTagClient(c config) *ChangelogTagClient {
+	return &ChangelogTagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `changelogtag.Hooks(f(g(h())))`.
+func (c *ChangelogTagClient) Use(hooks ...Hook) {
+	c.hooks.ChangelogTag = append(c.hooks.ChangelogTag, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `changelogtag.Intercept(f(g(h())))`.
+func (c *ChangelogTagClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ChangelogTag = append(c.inters.ChangelogTag, interceptors...)
+}
+
+// Create returns a builder for creating a ChangelogTag entity.
+func (c *ChangelogTagClient) Create() *ChangelogTagCreate {
+	mutation := newChangelogTagMutation(c.config, OpCreate)
+	return &ChangelogTagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ChangelogTag entities.
+func (c *ChangelogTagClient) CreateBulk(builders ...*ChangelogTagCreate) *ChangelogTagCreateBulk {
+	return &ChangelogTagCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ChangelogTagClient) MapCreateBulk(slice any, setFunc func(*ChangelogTagCreate, int)) *ChangelogTagCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ChangelogTagCreateBulk{err: fmt.Errorf("calling to ChangelogTagClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ChangelogTagCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ChangelogTagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ChangelogTag.
+func (c *ChangelogTagClient) Update() *ChangelogTagUpdate {
+	mutation := newChangelogTagMutation(c.config, OpUpdate)
+	return &ChangelogTagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ChangelogTagClient) UpdateOne(_m *ChangelogTag) *ChangelogTagUpdateOne {
+	mutation := newChangelogTagMutation(c.config, OpUpdateOne, withChangelogTag(_m))
+	return &ChangelogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ChangelogTagClient) UpdateOneID(id uuid.UUID) *ChangelogTagUpdateOne {
+	mutation := newChangelogTagMutation(c.config, OpUpdateOne, withChangelogTagID(id))
+	return &ChangelogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ChangelogTag.
+func (c *ChangelogTagClient) Delete() *ChangelogTagDelete {
+	mutation := newChangelogTagMutation(c.config, OpDelete)
+	return &ChangelogTagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ChangelogTagClient) DeleteOne(_m *ChangelogTag) *ChangelogTagDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ChangelogTagClient) DeleteOneID(id uuid.UUID) *ChangelogTagDeleteOne {
+	builder := c.Delete().Where(changelogtag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ChangelogTagDeleteOne{builder}
+}
+
+// Query returns a query builder for ChangelogTag.
+func (c *ChangelogTagClient) Query() *ChangelogTagQuery {
+	return &ChangelogTagQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeChangelogTag},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ChangelogTag entity by its id.
+func (c *ChangelogTagClient) Get(ctx context.Context, id uuid.UUID) (*ChangelogTag, error) {
+	return c.Query().Where(changelogtag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ChangelogTagClient) GetX(ctx context.Context, id uuid.UUID) *ChangelogTag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a ChangelogTag.
+func (c *ChangelogTagClient) QueryGroup(_m *ChangelogTag) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(changelogtag.Table, changelogtag.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, changelogtag.GroupTable, changelogtag.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryChangelogs queries the changelogs edge of a ChangelogTag.
+func (c *ChangelogTagClient) QueryChangelogs(_m *ChangelogTag) *ChangelogQuery {
+	query := (&ChangelogClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(changelogtag.Table, changelogtag.FieldID, id),
+			sqlgraph.To(changelog.Table, changelog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, changelogtag.ChangelogsTable, changelogtag.ChangelogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ChangelogTagClient) Hooks() []Hook {
+	return c.hooks.ChangelogTag
+}
+
+// Interceptors returns the client interceptors.
+func (c *ChangelogTagClient) Interceptors() []Interceptor {
+	return c.inters.ChangelogTag
+}
+
+func (c *ChangelogTagClient) mutate(ctx context.Context, m *ChangelogTagMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ChangelogTagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ChangelogTagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ChangelogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ChangelogTagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ChangelogTag mutation op: %q", m.Op())
+	}
+}
+
 // EntityClient is a client for the Entity schema.
 type EntityClient struct {
 	config
@@ -1022,6 +1368,22 @@ func (c *EntityClient) QueryAttachments(_m *Entity) *AttachmentQuery {
 			sqlgraph.From(entity.Table, entity.FieldID, id),
 			sqlgraph.To(attachment.Table, attachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, entity.AttachmentsTable, entity.AttachmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryChangelogEntries queries the changelog_entries edge of a Entity.
+func (c *EntityClient) QueryChangelogEntries(_m *Entity) *ChangelogQuery {
+	query := (&ChangelogClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, id),
+			sqlgraph.To(changelog.Table, changelog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, entity.ChangelogEntriesTable, entity.ChangelogEntriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1778,6 +2140,22 @@ func (c *GroupClient) QueryEntityTemplates(_m *Group) *EntityTemplateQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(entitytemplate.Table, entitytemplate.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.EntityTemplatesTable, group.EntityTemplatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryChangelogTags queries the changelog_tags edge of a Group.
+func (c *GroupClient) QueryChangelogTags(_m *Group) *ChangelogTagQuery {
+	query := (&ChangelogTagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(changelogtag.Table, changelogtag.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.ChangelogTagsTable, group.ChangelogTagsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2803,13 +3181,13 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
-		EntityType, Group, GroupInvitationToken, MaintenanceEntry, Notifier, Tag,
-		TemplateField, User []ent.Hook
+		Attachment, AuthRoles, AuthTokens, Changelog, ChangelogTag, Entity, EntityField,
+		EntityTemplate, EntityType, Group, GroupInvitationToken, MaintenanceEntry,
+		Notifier, Tag, TemplateField, User []ent.Hook
 	}
 	inters struct {
-		Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
-		EntityType, Group, GroupInvitationToken, MaintenanceEntry, Notifier, Tag,
-		TemplateField, User []ent.Interceptor
+		Attachment, AuthRoles, AuthTokens, Changelog, ChangelogTag, Entity, EntityField,
+		EntityTemplate, EntityType, Group, GroupInvitationToken, MaintenanceEntry,
+		Notifier, Tag, TemplateField, User []ent.Interceptor
 	}
 )

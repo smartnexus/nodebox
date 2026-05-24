@@ -95,9 +95,11 @@ type EntityEdges struct {
 	MaintenanceEntries []*MaintenanceEntry `json:"maintenance_entries,omitempty"`
 	// Attachments holds the value of the attachments edge.
 	Attachments []*Attachment `json:"attachments,omitempty"`
+	// ChangelogEntries holds the value of the changelog_entries edge.
+	ChangelogEntries []*Changelog `json:"changelog_entries,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [9]bool
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -176,6 +178,15 @@ func (e EntityEdges) AttachmentsOrErr() ([]*Attachment, error) {
 		return e.Attachments, nil
 	}
 	return nil, &NotLoadedError{edge: "attachments"}
+}
+
+// ChangelogEntriesOrErr returns the ChangelogEntries value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntityEdges) ChangelogEntriesOrErr() ([]*Changelog, error) {
+	if e.loadedTypes[8] {
+		return e.ChangelogEntries, nil
+	}
+	return nil, &NotLoadedError{edge: "changelog_entries"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -438,6 +449,11 @@ func (_m *Entity) QueryMaintenanceEntries() *MaintenanceEntryQuery {
 // QueryAttachments queries the "attachments" edge of the Entity entity.
 func (_m *Entity) QueryAttachments() *AttachmentQuery {
 	return NewEntityClient(_m.config).QueryAttachments(_m)
+}
+
+// QueryChangelogEntries queries the "changelog_entries" edge of the Entity entity.
+func (_m *Entity) QueryChangelogEntries() *ChangelogQuery {
+	return NewEntityClient(_m.config).QueryChangelogEntries(_m)
 }
 
 // Update returns a builder for updating this Entity.

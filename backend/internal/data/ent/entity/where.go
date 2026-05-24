@@ -1605,6 +1605,29 @@ func HasAttachmentsWith(preds ...predicate.Attachment) predicate.Entity {
 	})
 }
 
+// HasChangelogEntries applies the HasEdge predicate on the "changelog_entries" edge.
+func HasChangelogEntries() predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ChangelogEntriesTable, ChangelogEntriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasChangelogEntriesWith applies the HasEdge predicate on the "changelog_entries" edge with a given conditions (other predicates).
+func HasChangelogEntriesWith(preds ...predicate.Changelog) predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := newChangelogEntriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Entity) predicate.Entity {
 	return predicate.Entity(sql.AndPredicates(predicates...))

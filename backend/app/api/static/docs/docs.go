@@ -211,6 +211,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/changelog-tags": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Changelog Tags"
+                ],
+                "summary": "Get All Changelog Tags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.ChangelogTagOut"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Changelog Tags"
+                ],
+                "summary": "Create Changelog Tag",
+                "parameters": [
+                    {
+                        "description": "Tag Data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.ChangelogTagCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.ChangelogTagOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/changelog-tags/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Changelog Tags"
+                ],
+                "summary": "Delete Changelog Tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/v1/currency": {
             "get": {
                 "produces": [
@@ -800,6 +890,82 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/entities/{id}/changelog": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Item Changelog"
+                ],
+                "summary": "Get Changelog",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Item ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.ChangelogEntry"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Item Changelog"
+                ],
+                "summary": "Create Changelog Entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Item ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Entry Data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.ChangelogEntryCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.ChangelogEntry"
+                        }
                     }
                 }
             }
@@ -3015,6 +3181,117 @@ const docTemplate = `{
                 }
             }
         },
+        "ent.Changelog": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the ChangelogQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.ChangelogEdges"
+                        }
+                    ]
+                },
+                "entity_id": {
+                    "description": "EntityID holds the value of the \"entity_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "Summary holds the value of the \"summary\" field.",
+                    "type": "string"
+                },
+                "tag_id": {
+                    "description": "TagID holds the value of the \"tag_id\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.ChangelogEdges": {
+            "type": "object",
+            "properties": {
+                "entity": {
+                    "description": "Entity holds the value of the entity edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Entity"
+                        }
+                    ]
+                },
+                "tag": {
+                    "description": "Tag holds the value of the tag edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.ChangelogTag"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.ChangelogTag": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color holds the value of the \"color\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the ChangelogTagQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.ChangelogTagEdges"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.ChangelogTagEdges": {
+            "type": "object",
+            "properties": {
+                "changelogs": {
+                    "description": "Changelogs holds the value of the changelogs edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.Changelog"
+                    }
+                },
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                }
+            }
+        },
         "ent.Entity": {
             "type": "object",
             "properties": {
@@ -3136,6 +3413,13 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ent.Attachment"
+                    }
+                },
+                "changelog_entries": {
+                    "description": "ChangelogEntries holds the value of the changelog_entries edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.Changelog"
                     }
                 },
                 "children": {
@@ -3483,6 +3767,13 @@ const docTemplate = `{
         "ent.GroupEdges": {
             "type": "object",
             "properties": {
+                "changelog_tags": {
+                    "description": "ChangelogTags holds the value of the changelog_tags edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.ChangelogTag"
+                    }
+                },
                 "entities": {
                     "description": "Entities holds the value of the entities edge.",
                     "type": "array",
@@ -3995,6 +4286,85 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "search_engine_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.ChangelogEntry": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "tag": {
+                    "$ref": "#/definitions/repo.ChangelogTagSummary"
+                }
+            }
+        },
+        "repo.ChangelogEntryCreate": {
+            "type": "object",
+            "required": [
+                "summary"
+            ],
+            "properties": {
+                "summary": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.ChangelogTagCreate": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.ChangelogTagOut": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.ChangelogTagSummary": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
